@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}GyepMester{% endblock %} – Okos gyepápolás</title>
+  <meta name="description" content="{% block meta_desc %}GyepMester – személyre szabott gyepápolási naptár, emlékeztetők és javaslatok.{% endblock %}">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+<!-- ========== ALKALMAZÁS LAYOUT (bejelentkezve) ========== -->
+<div class="app-layout">
+
+  <!-- OLDALSÁV -->
+  <aside class="sidebar" id="sidebar">
+    <!-- Logo -->
+    <a href="{{ url_for('dashboard') }}" class="sidebar-logo">
+      <div class="sidebar-logo-icon">🌿</div>
+      <span class="sidebar-logo-text">Gyep<span>Mester</span></span>
+    </a>
+
+    <!-- Navigáció -->
+    <nav class="sidebar-nav">
+      <div class="nav-label">Főmenü</div>
+
+      <a href="{{ url_for('dashboard') }}"
+         class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+        <span class="nav-item-icon"><i class="fa-solid fa-gauge-high"></i></span>
+        <span>Dashboard</span>
+      </a>
+
+      <a href="{{ url_for('profiles') }}"
+         class="nav-item {% if 'profile' in request.endpoint %}active{% endif %}">
+        <span class="nav-item-icon"><i class="fa-solid fa-seedling"></i></span>
+        <span>Gyep Profiljaim</span>
+      </a>
+
+      <a href="{{ url_for('activities') }}"
+         class="nav-item {% if 'activit' in request.endpoint %}active{% endif %}">
+        <span class="nav-item-icon"><i class="fa-solid fa-clipboard-list"></i></span>
+        <span>Tevékenységek</span>
+      </a>
+
+      <div class="nav-label">Elemzés</div>
+
+      <a href="{{ url_for('calendar') }}"
+         class="nav-item {% if request.endpoint == 'calendar' %}active{% endif %}">
+        <span class="nav-item-icon"><i class="fa-solid fa-calendar-days"></i></span>
+        <span>Naptár</span>
+      </a>
+
+      <a href="{{ url_for('suggestions') }}"
+         class="nav-item {% if request.endpoint == 'suggestions' %}active{% endif %}">
+        <span class="nav-item-icon"><i class="fa-solid fa-lightbulb"></i></span>
+        <span>Javaslatok</span>
+      </a>
+    </nav>
+
+    <!-- Felhasználói terület -->
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-user-avatar">
+          {{ current_user.username[0].upper() }}
+        </div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name">{{ current_user.username }}</div>
+          <div class="sidebar-user-role">
+            <a href="{{ url_for('logout') }}" style="color: var(--text-muted); font-size: 0.72rem;">
+              <i class="fa-solid fa-right-from-bracket"></i> Kijelentkezés
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- TARTALOM -->
+  <main class="main-content">
+    {% block page_header %}{% endblock %}
+    <div class="page-body">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+</div>
+{% else %}
+<!-- ========== AUTH LAYOUT (nem bejelentkezett) ========== -->
+  {% block auth_content %}{% endblock %}
+{% endif %}
+
+<!-- FLASH ÜZENETEK -->
+<div class="flash-container" id="flash-container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash flash-{{ category }}" role="alert">
+        <span>
+          {% if category == 'success' %}✅{% elif category == 'danger' %}❌{% elif category == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+          {{ message }}
+        </span>
+        <button class="flash-close" type="button" aria-label="Bezárás">✕</button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+</div>
+
+<!-- JS -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_scripts %}{% endblock %}
+
+<style>
+@keyframes slideOut {
+  to { transform: translateX(110%); opacity: 0; }
+}
+</style>
+
+</body>
+</html>

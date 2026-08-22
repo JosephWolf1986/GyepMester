@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Új Gyep Profil{% endblock %}
+{% block meta_desc %}Hozz létre új gyep profilt – terület, helyszín, fűtípus és termék adatok megadásával.{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+  <div class="d-flex align-center justify-between">
+    <div>
+      <h1 class="page-title">
+        <i class="fa-solid fa-plus" style="color:var(--color-primary-400); margin-right:var(--space-2);"></i>
+        Új Gyep Profil
+      </h1>
+      <p class="page-subtitle">Töltsd ki az adatokat, hogy személyre szabott javaslatokat kaphass.</p>
+    </div>
+    <a href="{{ url_for('profiles') }}" class="btn btn-secondary">
+      <i class="fa-solid fa-arrow-left"></i> Vissza
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:760px;">
+  <form method="POST" enctype="multipart/form-data" novalidate>
+
+    {# ── ALAPADATOK ── #}
+    <div class="card mb-6">
+      <h2 style="font-size:1rem; margin-bottom:var(--space-5); color:var(--text-secondary);">
+        <i class="fa-solid fa-info-circle"></i> Alapadatok
+      </h2>
+
+      <div class="form-group">
+        <label class="form-label" for="name">Gyep neve *</label>
+        <input type="text" id="name" name="name" class="form-control" placeholder="pl. Elülső kert" required value="{{ request.form.get('name', '') }}">
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-5);">
+        <div class="form-group">
+          <label class="form-label" for="area_sqm">Terület (m²) *</label>
+          <input type="number" id="area_sqm" name="area_sqm" class="form-control" placeholder="pl. 150" step="0.5" min="1" required value="{{ request.form.get('area_sqm', '') }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="location_city">Helyszín (város) *</label>
+          <input type="text" id="location_city" name="location_city" class="form-control" placeholder="pl. Budapest" required value="{{ request.form.get('location_city', '') }}">
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-5);">
+        <div class="form-group">
+          <label class="form-label" for="soil_type">Talajtype</label>
+          <select id="soil_type" name="soil_type" class="form-control">
+            <option value="">– Válassz –</option>
+            {% for t in ['Homokos', 'Agyagos', 'Vályogos', 'Tőzeges'] %}
+            <option value="{{ t }}" {% if request.form.get('soil_type') == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="sun_exposure">Napsütés</label>
+          <select id="sun_exposure" name="sun_exposure" class="form-control">
+            <option value="">– Válassz –</option>
+            {% for e in ['Teljes nap', 'Félárnyas', 'Árnyékos'] %}
+            <option value="{{ e }}" {% if request.form.get('sun_exposure') == e %}selected{% endif %}>{{ e }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    {# ── FŰTÍPUS ── #}
+    <div class="card mb-6">
+      <h2 style="font-size:1rem; margin-bottom:var(--space-5); color:var(--text-secondary);">
+        <i class="fa-solid fa-leaf"></i> Fűtípus
+      </h2>
+
+      <div class="product-selector">
+        <div class="product-selector-tabs">
+          <label style="cursor:pointer;">
+            <input type="radio" name="grass_type_source" value="manual" checked style="display:none;">
+            <span class="product-tab active" id="grass-tab-manual" onclick="setGrassTab(this, 'manual')">✏️ Kézi megadás</span>
+          </label>
+          <label style="cursor:pointer;">
+            <input type="radio" name="grass_type_source" value="product" style="display:none;">
+            <span class="product-tab" id="grass-tab-product" onclick="setGrassTab(this, 'product')">📦 Termék alapján</span>
+          </label>
+        </div>
+
+        <div id="grass-manual-section">
+          <div class="form-group">
+            <label class="form-label" for="grass_type">Fűtípus leírása</label>
+            <input type="text" id="grass_type" name="grass_type" class="form-control" placeholder="pl. Angol perje, Nádtippan" value="{{ request.form.get('grass_type', '') }}">
+          </div>
+        </div>
+
+        <div id="grass-product-section" style="display:none;">
+          <div class="form-group">
+            <label class="form-label" for="grass_seed_product_id">Fűmag termék</label>
+            <select id="grass_seed_product_id" name="grass_seed_product_id" class="form-control">
+              <option value="">– Válassz terméket –</option>
+              {% for brand, products in brands.items() %}
+              <optgroup label="{{ brand }}">
+                {% for p in products %}
+                <option value="{{ p.id }}">{{ p.product_name }} ({{ p.grass_types | truncate(40) }})</option>
+                {% endfor %}
+              </optgroup>
+              {% endfor %}
+            </select>
+          </div>
+          <div id="grass-auto-info" class="product-auto-fill-info"></div>
+        </div>
+      </div>
+    </div>
+
+    {# ── FOTÓ ── #}
+    <div class="card mb-6">
+      <h2 style="font-size:1rem; margin-bottom:var(--space-5); color:var(--text-secondary);">
+        <i class="fa-solid fa-camera"></i> Fotó (opcionális)
+      </h2>
+      <div class="form-group">
+        <label class="form-label" for="photo">Kép feltöltése</label>
+        <input type="file" id="photo" name="photo" class="form-control" accept="image/*">
+        <p class="form-hint">Max. 16 MB – JPG, PNG, WEBP, GIF. Automatikusan átméretezésre kerül.</p>
+        <img id="photo_preview" src="" alt="Előnézet" style="display:none; margin-top:var(--space-4); max-height:200px; border-radius:var(--radius-md); object-fit:cover;">
+      </div>
+    </div>
+
+    <div class="d-flex gap-3">
+      <button type="submit" class="btn btn-primary btn-lg" id="new-profile-submit-btn">
+        <i class="fa-solid fa-floppy-disk"></i> Profil mentése
+      </button>
+      <a href="{{ url_for('profiles') }}" class="btn btn-secondary btn-lg">Mégsem</a>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function setGrassTab(el, val) {
+  document.querySelectorAll('.product-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelector('input[name="grass_type_source"][value="' + val + '"]').checked = true;
+  document.getElementById('grass-manual-section').style.display = val === 'manual' ? 'block' : 'none';
+  document.getElementById('grass-product-section').style.display = val === 'product' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

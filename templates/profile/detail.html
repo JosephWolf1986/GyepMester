@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lawn.name }} – Részletek{% endblock %}
+{% block meta_desc %}{{ lawn.name }} gyep profil – ápolási előzmények, javaslatok és statisztikák.{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+  <div class="d-flex align-center justify-between">
+    <div>
+      <h1 class="page-title">{{ lawn.name }}</h1>
+      <p class="page-subtitle">
+        <i class="fa-solid fa-location-dot"></i> {{ lawn.location_city }} &nbsp;·&nbsp;
+        {{ lawn.area_sqm | int }} m²
+        {% if lawn.soil_type %}&nbsp;·&nbsp; {{ lawn.soil_type }}{% endif %}
+        {% if lawn.sun_exposure %}&nbsp;·&nbsp; {{ lawn.sun_exposure }}{% endif %}
+      </p>
+    </div>
+    <div class="d-flex gap-3">
+      <a href="{{ url_for('edit_profile', lawn_id=lawn.id) }}" class="btn btn-secondary" id="detail-edit-btn">
+        <i class="fa-solid fa-pen"></i> Szerkesztés
+      </a>
+      <a href="{{ url_for('add_activity', log_type='watering') }}?lawn_id={{ lawn.id }}" class="btn btn-primary" id="detail-add-activity-btn">
+        <i class="fa-solid fa-plus"></i> Tevékenység
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<div style="display:grid; grid-template-columns: 1fr 2fr; gap:var(--space-6);">
+
+  {# ── BAL PANEL ── #}
+  <div>
+
+    {# Fotó #}
+    {% if lawn.photo %}
+    <div class="card mb-4" style="padding:0; overflow:hidden;">
+      <img src="{{ url_for('static', filename='uploads/' + lawn.photo) }}"
+           alt="{{ lawn.name }}" style="width:100%; height:220px; object-fit:cover;">
+    </div>
+    {% endif %}
+
+    {# Alap adatok #}
+    <div class="card mb-4">
+      <h3 style="font-size:0.85rem; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin-bottom:var(--space-4);">
+        Profil adatok
+      </h3>
+      <dl style="display:flex; flex-direction:column; gap:var(--space-3);">
+        <div>
+          <dt class="text-xs text-muted">Terület</dt>
+          <dd class="font-bold" style="color:var(--text-primary);">{{ lawn.area_sqm }} m²</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-muted">Helyszín</dt>
+          <dd class="font-bold" style="color:var(--text-primary);">{{ lawn.location_city }}</dd>
+        </div>
+        {% if lawn.soil_type %}
+        <div>
+          <dt class="text-xs text-muted">Talajtype</dt>
+          <dd class="font-bold" style="color:var(--text-primary);">{{ lawn.soil_type }}</dd>
+        </div>
+        {% endif %}
+        {% if lawn.sun_exposure %}
+        <div>
+          <dt class="text-xs text-muted">Napsütés</dt>
+          <dd class="font-bold" style="color:var(--text-primary);">{{ lawn.sun_exposure }}</dd>
+        </div>
+        {% endif %}
+        {% if lawn.grass_type %}
+        <div>
+          <dt class="text-xs text-muted">Fűtípus</dt>
+          <dd style="color:var(--text-secondary); font-size:0.875rem;">{{ lawn.grass_type }}</dd>
+        </div>
+        {% endif %}
+        {% if lawn.seed_product %}
+        <div>
+          <dt class="text-xs text-muted">Fűmag termék</dt>
+          <dd style="color:var(--color-primary-400); font-size:0.875rem; font-weight:600;">
+            {{ lawn.seed_product.brand }} – {{ lawn.seed_product.product_name }}
+          </dd>
+        </div>
+        {% endif %}
+        <div>
+          <dt class="text-xs text-muted">Létrehozva</dt>
+          <dd class="text-sm" style="color:var(--text-muted);">{{ lawn.created_at.strftime('%Y. %m. %d.') }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    {# Utolsó tevékenységek #}
+    <div class="card mb-4">
+      <h3 style="font-size:0.85rem; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin-bottom:var(--space-4);">
+        Utolsó tevékenységek
+      </h3>
+      {% set lw = lawn.last_watering() %}
+      {% set lm = lawn.last_mowing() %}
+      {% set lf = lawn.last_fertilizing() %}
+      {% set la = lawn.last_aeration() %}
+      <div style="display:flex; flex-direction:column; gap:var(--space-3);">
+        <div class="d-flex align-center gap-3">
+          <span style="font-size:1.2rem;">💧</span>
+          <div>
+            <div class="text-xs text-muted">Öntözés</div>
+            <div class="text-sm font-bold" style="color:var(--text-primary);">
+              {% if lw %}{{ days_since(lw.date) }} napja{% else %}–{% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="d-flex align-center gap-3">
+          <span style="font-size:1.2rem;">✂️</span>
+          <div>
+            <div class="text-xs text-muted">Nyírás</div>
+            <div class="text-sm font-bold" style="color:var(--text-primary);">
+              {% if lm %}{{ days_since(lm.date) }} napja{% else %}–{% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="d-flex align-center gap-3">
+          <span style="font-size:1.2rem;">🌱</span>
+          <div>
+            <div class="text-xs text-muted">Trágyázás</div>
+            <div class="text-sm font-bold" style="color:var(--text-primary);">
+              {% if lf %}{{ days_since(lf.date) }} napja{% else %}–{% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="d-flex align-center gap-3">
+          <span style="font-size:1.2rem;">🌬️</span>
+          <div>
+            <div class="text-xs text-muted">Szellőztetés</div>
+            <div class="text-sm font-bold" style="color:var(--text-primary);">
+              {% if la %}{{ days_since(la.date) }} napja{% else %}–{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  {# ── JOB PANEL ── #}
+  <div>
+
+    {# Javaslatok #}
+    {% if suggestions %}
+    <div class="card mb-6">
+      <h2 style="font-size:1rem; margin-bottom:var(--space-4);">
+        <i class="fa-solid fa-lightbulb" style="color:var(--color-warning);"></i> Javaslatok
+      </h2>
+      {% for s in suggestions %}
+      <div class="suggestion-card priority-{{ s.priority }}" style="margin-bottom:var(--space-3);">
+        <div class="suggestion-icon">{{ s.icon }}</div>
+        <div>
+          <div class="suggestion-title">{{ s.title }}</div>
+          <div class="suggestion-message">{{ s.message }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {# Gyors hozzáadás #}
+    <div class="card mb-6">
+      <h2 style="font-size:1rem; margin-bottom:var(--space-4);">
+        <i class="fa-solid fa-bolt" style="color:var(--color-accent-400);"></i> Tevékenység rögzítése
+      </h2>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:var(--space-3);">
+        {% for icon, label, ltype in [('💧','Öntözés','watering'),('✂️','Nyírás','mowing'),('🌱','Trágyázás','fertilizing'),('🌬️','Szellőztetés','aeration'),('🌿','Gyomirtás','weed'),('🐛','Kártevő','pest')] %}
+        <a href="{{ url_for('add_activity', log_type=ltype) }}?lawn_id={{ lawn.id }}"
+           class="btn btn-secondary" id="detail-add-{{ ltype }}-btn"
+           style="justify-content:center; padding:var(--space-4); flex-direction:column; gap:var(--space-1); height:80px;">
+          <span style="font-size:1.5rem;">{{ icon }}</span>
+          <span class="text-xs">{{ label }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# Napló lista – utolsó öntözések #}
+    {% if recent_waterings %}
+    <div class="card mb-4">
+      <div class="d-flex align-center justify-between mb-4">
+        <h2 style="font-size:1rem;">💧 Utolsó öntözések</h2>
+        <a href="{{ url_for('activities', lawn_id=lawn.id, type='watering') }}" class="btn btn-sm btn-secondary">Mind</a>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Dátum</th>
+              <th>Időtartam</th>
+              <th>Mennyiség</th>
+              <th>Módszer</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in recent_waterings %}
+            <tr>
+              <td>{{ log.date.strftime('%Y. %m. %d.') }}</td>
+              <td>{% if log.duration_min %}{{ log.duration_min }} perc{% else %}–{% endif %}</td>
+              <td>{% if log.amount_liters %}{{ log.amount_liters }} l/m²{% else %}–{% endif %}</td>
+              <td>{{ log.method or '–' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}

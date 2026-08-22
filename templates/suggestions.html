@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Javaslatok{% endblock %}
+{% block meta_desc %}Személyre szabott gyepápolási javaslatok – öntözés, nyírás, trágyázás időzítése.{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+  <div class="d-flex align-center justify-between">
+    <div>
+      <h1 class="page-title">
+        <i class="fa-solid fa-lightbulb" style="color:var(--color-accent-400); margin-right:var(--space-2);"></i>
+        Javaslatok
+      </h1>
+      <p class="page-subtitle">Személyre szabott gyepápolási javaslatok az összes gyepedhez</p>
+    </div>
+    {% if weather %}
+    <div class="d-flex align-center gap-2" style="background:var(--bg-elevated); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:var(--space-3) var(--space-4);">
+      <span style="font-size:1.4rem;">{{ weather.icon or '🌤️' }}</span>
+      <div>
+        <div style="font-weight:700; color:var(--text-primary);">{{ weather.temp | round(1) }}°C</div>
+        <div class="text-xs text-muted">{{ weather.city }}</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+{% if not lawns %}
+  <div class="empty-state">
+    <div class="empty-state-icon">🌱</div>
+    <div class="empty-state-title">Nincs gyep profil</div>
+    <p class="empty-state-text">Hozz létre egy gyep profilt, hogy javaslatokat kaphass.</p>
+    <a href="{{ url_for('new_profile') }}" class="btn btn-primary btn-lg">
+      <i class="fa-solid fa-plus"></i> Gyep létrehozása
+    </a>
+  </div>
+
+{% elif not suggestions %}
+  <div class="empty-state">
+    <div class="empty-state-icon">✅</div>
+    <div class="empty-state-title">Minden rendben!</div>
+    <p class="empty-state-text">
+      Jelenleg nincsenek különleges teendők – gyepjeid ápolása megfelelőnek tűnik.
+      Folytasd így! 🌿
+    </p>
+  </div>
+
+{% else %}
+  {# Prioritás összegzés #}
+  {% set high_count = suggestions | selectattr('priority', 'eq', 'high') | list | length %}
+  {% set med_count  = suggestions | selectattr('priority', 'eq', 'medium') | list | length %}
+  {% set low_count  = suggestions | selectattr('priority', 'eq', 'low') | list | length %}
+
+  <div class="d-flex gap-3 mb-8" style="flex-wrap:wrap;">
+    {% if high_count %}
+    <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-md); padding:var(--space-3) var(--space-5);">
+      <span style="color:#f87171; font-weight:700; font-size:1.4rem;">{{ high_count }}</span>
+      <span class="text-xs text-muted"> sürgős</span>
+    </div>
+    {% endif %}
+    {% if med_count %}
+    <div style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:var(--radius-md); padding:var(--space-3) var(--space-5);">
+      <span style="color:#fcd34d; font-weight:700; font-size:1.4rem;">{{ med_count }}</span>
+      <span class="text-xs text-muted"> közepes</span>
+    </div>
+    {% endif %}
+    {% if low_count %}
+    <div style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:var(--radius-md); padding:var(--space-3) var(--space-5);">
+      <span style="color:var(--color-primary-400); font-weight:700; font-size:1.4rem;">{{ low_count }}</span>
+      <span class="text-xs text-muted"> alacsony</span>
+    </div>
+    {% endif %}
+  </div>
+
+  {% set current_lawn = namespace(id=none) %}
+  {% for s in suggestions %}
+    {% if s.lawn_id != current_lawn.id %}
+      {% set current_lawn.id = s.lawn_id %}
+      <h2 style="font-size:0.85rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); margin-top:var(--space-6); margin-bottom:var(--space-3); padding-bottom:var(--space-2); border-bottom:1px solid var(--border-color);">
+        🌿 {{ s.lawn_name }}
+      </h2>
+    {% endif %}
+
+    <div class="suggestion-card priority-{{ s.priority }} fade-in" style="margin-bottom:var(--space-3);">
+      <div class="suggestion-icon">{{ s.icon }}</div>
+      <div style="flex:1;">
+        <div class="suggestion-title">{{ s.title }}</div>
+        <div class="suggestion-message">{{ s.message }}</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:var(--space-2); align-self:center;">
+        <span class="badge {% if s.priority == 'high' %}badge-danger{% elif s.priority == 'medium' %}badge-warning{% else %}badge-success{% endif %}">
+          {{ s.priority | upper }}
+        </span>
+        {% if s.action_url %}
+        <a href="{{ s.action_url }}" class="btn btn-sm btn-secondary">Rögzít</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+{% endif %}
+
+{% endblock %}

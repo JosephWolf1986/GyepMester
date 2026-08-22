@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block meta_desc %}Gyepápolás összefoglaló – időjárás, javaslatok és gyepeid állapota egy helyen.{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+  <div class="d-flex align-center justify-between">
+    <div>
+      <h1 class="page-title">
+        <i class="fa-solid fa-gauge-high" style="color:var(--color-primary-400); margin-right:var(--space-2);"></i>
+        Dashboard
+      </h1>
+      <p class="page-subtitle">Szia, <strong>{{ current_user.username }}</strong>! Íme a gyepeid mai állapota.</p>
+    </div>
+    <a href="{{ url_for('new_profile') }}" class="btn btn-primary" id="dashboard-new-profile-btn">
+      <i class="fa-solid fa-plus"></i> Új gyep
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+{# ── IDŐJÁRÁS ── #}
+{% if weather %}
+<div class="weather-card mb-6 fade-in">
+  <div style="font-size:3.5rem; line-height:1;">{{ weather.icon or '🌤️' }}</div>
+  <div>
+    <div class="weather-temp">{{ weather.temp | round(1) }}°C</div>
+    <div class="weather-desc">{{ weather.description | capitalize }} · {{ weather.city }}</div>
+  </div>
+  <div style="margin-left: auto; display:flex; flex-direction:column; gap:var(--space-2);">
+    {% if weather.humidity %}
+    <span class="badge badge-info"><i class="fa-solid fa-droplet"></i> {{ weather.humidity }}% páratartalom</span>
+    {% endif %}
+    {% if weather.wind_speed %}
+    <span class="badge badge-gray"><i class="fa-solid fa-wind"></i> {{ weather.wind_speed }} km/h szél</span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{# ── GYORSSTATOK ── #}
+<div class="dashboard-grid mb-8">
+  <div class="card fade-in">
+    <div class="card-header">
+      <div class="card-icon green">🌿</div>
+    </div>
+    <div class="card-value">{{ lawns | length }}</div>
+    <div class="card-label">Gyep profil</div>
+    <div class="card-stat">
+      {% if lawns %}
+        Összterület: <strong>{{ lawns | sum(attribute='area_sqm') | round(0) | int }} m²</strong>
+      {% else %}
+        Még nincs gyep profilod
+      {% endif %}
+    </div>
+  </div>
+
+  {% for lawn in lawns[:3] %}
+  <div class="card fade-in">
+    <div class="card-header">
+      <div class="card-icon blue">💧</div>
+    </div>
+    {% set lw = lawn.last_watering() %}
+    {% if lw %}
+      <div class="card-value">{{ days_since(lw.date) }}</div>
+      <div class="card-label">Napja öntözve</div>
+      <div class="card-stat">{{ lawn.name }} · {{ lw.date.strftime('%m. %d.') }}</div>
+    {% else %}
+      <div class="card-value" style="font-size:1.2rem; color:var(--text-muted)">–</div>
+      <div class="card-label">Öntözés</div>
+      <div class="card-stat">{{ lawn.name }} – nincs adat</div>
+    {% endif %}
+  </div>
+
+  <div class="card fade-in">
+    <div class="card-header">
+      <div class="card-icon green">✂️</div>
+    </div>
+    {% set lm = lawn.last_mowing() %}
+    {% if lm %}
+      <div class="card-value">{{ days_since(lm.date) }}</div>
+      <div class="card-label">Napja nyírva</div>
+      <div class="card-stat">{{ lawn.name }} · {{ lm.date.strftime('%m. %d.') }}</div>
+    {% else %}
+      <div class="card-value" style="font-size:1.2rem; color:var(--text-muted)">–</div>
+      <div class="card-label">Nyírás</div>
+      <div class="card-stat">{{ lawn.name }} – nincs adat</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+{# ── SÜRGŐS JAVASLATOK ── #}
+{% if urgent_suggestions %}
+<h2 style="font-size:1.1rem; margin-bottom:var(--space-4); color:var(--color-danger);">
+  <i class="fa-solid fa-triangle-exclamation"></i> Sürgős teendők
+</h2>
+{% for s in urgent_suggestions %}
+<div class="suggestion-card priority-high fade-in">
+  <div class="suggestion-icon">{{ s.icon }}</div>
+  <div>
+    <div class="suggestion-title">{{ s.title }}</div>
+    <div class="suggestion-message">{{ s.message }}</div>
+  </div>
+  {% if s.action_url %}
+  <a href="{{ s.action_url }}" class="btn btn-sm btn-danger" style="margin-left:auto; align-self:center;">Rögzít</a>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{# ── NORMÁL JAVASLATOK ── #}
+{% if suggestions %}
+<h2 style="font-size:1.1rem; margin-top:var(--space-8); margin-bottom:var(--space-4); color:var(--text-secondary);">
+  <i class="fa-solid fa-lightbulb" style="color:var(--color-warning);"></i> Javaslatok
+</h2>
+{% for s in suggestions %}
+<div class="suggestion-card priority-{{ s.priority }} fade-in">
+  <div class="suggestion-icon">{{ s.icon }}</div>
+  <div>
+    <div class="suggestion-title">{{ s.title }}</div>
+    <div class="suggestion-message">{{ s.message }}</div>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{# ── ÜRES ÁLLAPOT ── #}
+{% if not lawns %}
+<div class="empty-state">
+  <div class="empty-state-icon">🌱</div>
+  <div class="empty-state-title">Még nincs gyep profilod</div>
+  <p class="empty-state-text">
+    Hozz létre egy gyep profilt, hogy megkaphass személyre szabott öntözési, nyírási és trágyázási javaslatokat!
+  </p>
+  <a href="{{ url_for('new_profile') }}" class="btn btn-primary btn-lg" id="dashboard-empty-new-btn">
+    <i class="fa-solid fa-plus"></i> Első gyep létrehozása
+  </a>
+</div>
+{% endif %}
+
+{% if lawns %}
+{# ── GYEP LISTA PREVIEW ── #}
+<h2 style="font-size:1.1rem; margin-top:var(--space-8); margin-bottom:var(--space-4);">
+  <i class="fa-solid fa-seedling" style="color:var(--color-primary-400);"></i> Gyepjeim
+</h2>
+<div class="profile-grid">
+  {% for lawn in lawns %}
+  <a href="{{ url_for('profile_detail', lawn_id=lawn.id) }}" class="lawn-card" style="text-decoration:none;">
+    <div class="lawn-card-image">
+      {% if lawn.photo %}
+        <img src="{{ url_for('static', filename='uploads/' + lawn.photo) }}" alt="{{ lawn.name }}">
+      {% else %}
+        🌿
+      {% endif %}
+    </div>
+    <div class="lawn-card-body">
+      <div class="lawn-card-name">{{ lawn.name }}</div>
+      <div class="lawn-card-meta">
+        <span class="badge badge-success">{{ lawn.area_sqm | int }} m²</span>
+        <span class="badge badge-gray"><i class="fa-solid fa-location-dot"></i> {{ lawn.location_city }}</span>
+        {% if lawn.soil_type %}
+        <span class="badge badge-gray">{{ lawn.soil_type }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="lawn-card-footer">
+      <span class="btn btn-sm btn-secondary">Részletek <i class="fa-solid fa-arrow-right"></i></span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

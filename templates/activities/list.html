@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Tevékenységek{% endblock %}
+{% block meta_desc %}Gyepápolási napló – öntözés, nyírás, trágyázás, szellőztetés és egyéb tevékenységek.{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+  <div class="d-flex align-center justify-between">
+    <div>
+      <h1 class="page-title">
+        <i class="fa-solid fa-clipboard-list" style="color:var(--color-primary-400); margin-right:var(--space-2);"></i>
+        Tevékenységek
+      </h1>
+      <p class="page-subtitle">Gyepápolási napló és előzmények</p>
+    </div>
+    {% if selected_lawn %}
+    <a href="{{ url_for('add_activity', log_type=log_type) }}?lawn_id={{ selected_lawn.id }}"
+       class="btn btn-primary" id="activities-add-btn">
+      <i class="fa-solid fa-plus"></i> Rögzítés
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+{# ── GYEP VÁLASZTÓ ── #}
+{% if lawns | length > 1 %}
+<div class="d-flex gap-2 mb-6" style="flex-wrap:wrap;">
+  {% for lawn in lawns %}
+  <a href="{{ url_for('activities', lawn_id=lawn.id, type=log_type) }}"
+     class="btn btn-sm {% if selected_lawn and selected_lawn.id == lawn.id %}btn-primary{% else %}btn-secondary{% endif %}">
+    🌿 {{ lawn.name }}
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{# ── TÍPUS TABOK ── #}
+{% set tabs = [
+  ('watering',    '💧', 'Öntözés'),
+  ('mowing',      '✂️', 'Nyírás'),
+  ('fertilizing', '🌱', 'Trágyázás'),
+  ('aeration',    '🌬️', 'Szellőztetés'),
+  ('weed',        '🌿', 'Gyomirtás'),
+  ('pest',        '🐛', 'Kártevő'),
+] %}
+<div class="activity-tabs mb-6">
+  {% for ltype, icon, label in tabs %}
+  <a href="{{ url_for('activities', lawn_id=selected_lawn.id if selected_lawn else '', type=ltype) }}"
+     class="activity-tab {% if log_type == ltype %}active{% endif %}"
+     id="activities-tab-{{ ltype }}">
+    {{ icon }} {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+{# ── NAPLÓ TARTALOM ── #}
+{% if not selected_lawn %}
+  <div class="empty-state">
+    <div class="empty-state-icon">🌱</div>
+    <div class="empty-state-title">Nincs gyep profil</div>
+    <p class="empty-state-text">Hozz létre egy gyep profilt a tevékenységek rögzítéséhez.</p>
+    <a href="{{ url_for('new_profile') }}" class="btn btn-primary btn-lg">
+      <i class="fa-solid fa-plus"></i> Gyep létrehozása
+    </a>
+  </div>
+
+{% elif not logs %}
+  <div class="empty-state">
+    <div class="empty-state-icon">
+      {% if log_type == 'watering' %}💧
+      {% elif log_type == 'mowing' %}✂️
+      {% elif log_type == 'fertilizing' %}🌱
+      {% elif log_type == 'aeration' %}🌬️
+      {% elif log_type == 'weed' %}🌿
+      {% else %}🐛{% endif %}
+    </div>
+    <div class="empty-state-title">Nincs még bejegyzés</div>
+    <p class="empty-state-text">
+      Még nem rögzítettél ilyen tevékenységet a(z) <strong>{{ selected_lawn.name }}</strong> gyephez.
+    </p>
+    <a href="{{ url_for('add_activity', log_type=log_type) }}?lawn_id={{ selected_lawn.id }}"
+       class="btn btn-primary btn-lg" id="activities-empty-add-btn">
+      <i class="fa-solid fa-plus"></i> Első bejegyzés hozzáadása
+    </a>
+  </div>
+
+{% else %}
+  <div class="table-wrapper card">
+    <table>
+      <thead>
+        <tr>
+          <th>Dátum</th>
+          {% if log_type == 'watering' %}
+            <th>Időtartam</th><th>Mennyiség</th><th>Módszer</th>
+          {% elif log_type == 'mowing' %}
+            <th>Magasság</th><th>Állapot</th>
+          {% elif log_type == 'fertilizing' %}
+            <th>Típus</th><th>NPK</th><th>g/m²</th>
+          {% elif log_type == 'aeration' %}
+            <th>Módszer</th><th>Felülvetés</th>
+          {% elif log_type == 'weed' %}
+            <th>Módszer</th><th>Termék</th><th>Súlyosság</th>
+          {% elif log_type == 'pest' %}
+            <th>Kártevő</th><th>Súlyosság</th><th>Kezelés</th>
+          {% endif %}
+          <th>Megjegyzés</th>
+          <th>Fotó</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td><strong>{{ log.date.strftime('%Y. %m. %d.') }}</strong></td>
+
+          {% if log_type == 'watering' %}
+            <td>{% if log.duration_min %}{{ log.duration_min }} perc{% else %}–{% endif %}</td>
+            <td>{% if log.amount_liters %}{{ log.amount_liters }} l/m²{% else %}–{% endif %}</td>
+            <td>{{ log.method or '–' }}</td>
+
+          {% elif log_type == 'mowing' %}
+            <td>{% if log.height_cm %}{{ log.height_cm }} cm{% else %}–{% endif %}</td>
+            <td>{{ log.condition_before or '–' }}</td>
+
+          {% elif log_type == 'fertilizing' %}
+            <td>{{ log.fertilizer_type or '–' }}</td>
+            <td>{{ log.npk_string() }}</td>
+            <td>{% if log.amount_per_sqm %}{{ log.amount_per_sqm }} g/m²{% else %}–{% endif %}</td>
+
+          {% elif log_type == 'aeration' %}
+            <td>{{ log.method or '–' }}</td>
+            <td>{% if log.overseeded %}<span class="badge badge-success">Igen</span>{% else %}<span class="badge badge-gray">Nem</span>{% endif %}</td>
+
+          {% elif log_type == 'weed' %}
+            <td>{{ log.method or '–' }}</td>
+            <td>{{ log.product_name or '–' }}</td>
+            <td>
+              {% if log.severity == 'Súlyos' %}<span class="badge badge-danger">{{ log.severity }}</span>
+              {% elif log.severity == 'Közepes' %}<span class="badge badge-warning">{{ log.severity }}</span>
+              {% elif log.severity %}<span class="badge badge-success">{{ log.severity }}</span>
+              {% else %}–{% endif %}
+            </td>
+
+          {% elif log_type == 'pest' %}
+            <td>{{ log.pest_type or '–' }}</td>
+            <td>
+              {% if log.severity == 'Súlyos' %}<span class="badge badge-danger">{{ log.severity }}</span>
+              {% elif log.severity == 'Közepes' %}<span class="badge badge-warning">{{ log.severity }}</span>
+              {% elif log.severity %}<span class="badge badge-success">{{ log.severity }}</span>
+              {% else %}–{% endif %}
+            </td>
+            <td>{{ log.treatment or '–' }}</td>
+          {% endif %}
+
+          <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            {{ log.notes or '–' }}
+          </td>
+          <td>
+            {% if log.photo %}
+            <a href="{{ url_for('static', filename='uploads/' + log.photo) }}" target="_blank">
+              <img src="{{ url_for('static', filename='uploads/' + log.photo) }}"
+                   alt="fotó" style="width:40px; height:40px; object-fit:cover; border-radius:var(--radius-sm);">
+            </a>
+            {% else %}–{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+
+{% endblock %}

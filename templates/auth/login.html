@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Bejelentkezés{% endblock %}
+{% block meta_desc %}Jelentkezz be a GyepMester fiókodba és kezeld gyepjaidat okosan.{% endblock %}
+
+{% block auth_content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🌿</div>
+      <h1 class="auth-title">Gyep<span style="color:var(--color-primary-400)">Mester</span></h1>
+      <p class="auth-subtitle">Üdvözlünk! Jelentkezz be a fiókodba.</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('login') }}" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="username">Felhasználónév</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          class="form-control"
+          placeholder="pl. kertész_janos"
+          required
+          autocomplete="username"
+          value="{{ request.form.get('username', '') }}"
+        >
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Jelszó</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          class="form-control"
+          placeholder="••••••••"
+          required
+          autocomplete="current-password"
+        >
+      </div>
+
+      <div class="form-group" style="display:flex; align-items:center; gap:var(--space-3);">
+        <label class="switch">
+          <input type="checkbox" name="remember" id="remember">
+          <span class="switch-track"></span>
+          <span style="font-size:0.875rem; color:var(--text-secondary);">Emlékezz rám</span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-submit-btn">
+        <i class="fa-solid fa-right-to-bracket"></i> Bejelentkezés
+      </button>
+    </form>
+
+    <div class="divider"></div>
+
+    <p class="text-center text-sm" style="color:var(--text-muted);">
+      Még nincs fiókod?
+      <a href="{{ url_for('register') }}" style="color:var(--color-primary-400); font-weight:600;">
+        Regisztrálj ingyen!
+      </a>
+    </p>
+  </div>
+</div>
+{% endblock %}

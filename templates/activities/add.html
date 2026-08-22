@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Tevékenység rögzítése{% endblock %}
+{% block meta_desc %}Rögzíts új gyepápolási tevékenységet – öntözés, nyírás, trágyázás és egyéb műveletek.{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+  <div class="d-flex align-center justify-between">
+    <div>
+      <h1 class="page-title">
+        {% if log_type == 'watering' %}💧 Öntözés rögzítése
+        {% elif log_type == 'mowing' %}✂️ Nyírás rögzítése
+        {% elif log_type == 'fertilizing' %}🌱 Trágyázás rögzítése
+        {% elif log_type == 'aeration' %}🌬️ Szellőztetés rögzítése
+        {% elif log_type == 'weed' %}🌿 Gyomirtás rögzítése
+        {% elif log_type == 'pest' %}🐛 Kártevő megfigyelés
+        {% endif %}
+      </h1>
+      <p class="page-subtitle">Töltsd ki az adatokat és mentsd el a bejegyzést.</p>
+    </div>
+    <a href="{{ url_for('activities') }}" class="btn btn-secondary">
+      <i class="fa-solid fa-arrow-left"></i> Vissza
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:680px;">
+  <form method="POST" enctype="multipart/form-data" novalidate>
+
+    {# ── GYEP ÉS DÁTUM ── #}
+    <div class="card mb-6">
+      <h2 style="font-size:1rem; margin-bottom:var(--space-5); color:var(--text-secondary);">
+        <i class="fa-solid fa-seedling"></i> Melyik gyephez?
+      </h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-5);">
+        <div class="form-group">
+          <label class="form-label" for="lawn_id">Gyep *</label>
+          <select id="lawn_id" name="lawn_id" class="form-control" required>
+            {% for lawn in lawns %}
+            <option value="{{ lawn.id }}"
+              {% if preselected_lawn_id == lawn.id %}selected{% endif %}>
+              {{ lawn.name }} ({{ lawn.area_sqm | int }} m²)
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="date">Dátum *</label>
+          <input type="date" id="date" name="date" class="form-control" required value="{{ today }}">
+        </div>
+      </div>
+    </div>
+
+    {# ── TÍPUS-SPECIFIKUS MEZŐK ── #}
+    <div class="card mb-6">
+      <h2 style="font-size:1rem; margin-bottom:var(--space-5); color:var(--text-secondary);">
+        <i class="fa-solid fa-sliders"></i> Részletek
+      </h2>
+
+      {% if log_type == 'watering' %}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-5);">
+          <div class="form-group">
+            <label class="form-label" for="duration_min">Időtartam (perc)</label>
+            <input type="number" id="duration_min" name="duration_min" class="form-control" min="1" max="600" placeholder="pl. 30">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="amount_liters">Mennyiség (l/m²)</label>
+            <input type="number" id="amount_liters" name="amount_liters" class="form-control" step="0.1" min="0" placeholder="pl. 5.5">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="method">Öntözési módszer</label>
+          <select id="method" name="method" class="form-control">
+            <option value="">– Válassz –</option>
+            {% for m in ['Kézi (locsolókanna)', 'Kézi (tömlő)', 'Öntözőrendszer', 'Szórófej', 'Csepegtető'] %}
+            <option value="{{ m }}">{{ m }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+      {% elif log_type == 'mowing' %}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-5);">
+          <div class="form-group">
+            <label class="form-label" for="height_cm">Vágási magasság (cm)</label>
+            <input type="number" id="height_cm" name="height_cm" class="form-control" step="0.5" min="1" max="20" placeholder="pl. 4">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="condition_before">Gyep állapota vágás előtt</label>
+            <select id="condition_before" name="condition_before" class="form-control">
+              <option value="">– Válassz –</option>
+              {% for c in ['Jó', 'Hosszú', 'Száraz', 'Nedves', 'Gyomos'] %}
+              <option value="{{ c }}">{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+      {% elif log_type == 'fertilizing' %}
+        {# Forrás toggle #}
+        <div class="product-selector mb-5">
+          <div class="product-selector-tabs">
+            <label style="cursor:pointer;">
+              <input type="radio" name="fertilizer_type_source" value="manual" checked style="display:none;">
+              <span class="product-tab active" onclick="setFertTab(this, 'manual')">✏️ Kézi megadás</span>
+            </label>
+            <label style="cursor:pointer;">
+              <input type="radio" name="fertilizer_type_source" value="product" style="display:none;">
+              <span class="product-tab" onclick="setFertTab(this, 'product')">📦 Termék alapján</span>
+            </label>
+          </div>
+
+          <div id="fert-manual-section">
+            <div class="form-group">
+              <label class="form-label" for="fertilizer_type">Trágyázás típusa</label>
+              <select id="fertilizer_type" name="fertilizer_type" class="form-control">
+                <option value="">– Válassz –</option>
+                {% for t in ['Nitrogéndús', 'Káliumdús', 'Foszfordús', 'Komplex (NPK)', 'Szerves', 'Tavaszi', 'Őszi'] %}
+                <option value="{{ t }}">{{ t }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:var(--space-4);">
+              <div class="form-group">
+                <label class="form-label" for="npk_n">N (nitrogén %)</label>
+                <input type="number" id="npk_n" name="npk_n" class="form-control" step="0.1" min="0" placeholder="pl. 24">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="npk_p">P (foszfor %)</label>
+                <input type="number" id="npk_p" name="npk_p" class="form-control" step="0.1" min="0" placeholder="pl. 5">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="npk_k">K (kálium %)</label>
+                <input type="number" id="npk_k" name="npk_k" class="form-control" step="0.1" min="0" placeholder="pl. 8">
+              </div>
+            </div>
+          </div>
+
+          <div id="fert-product-section" style="display:none;">
+            <div class="form-group">
+              <label class="form-label" for="fertilizer_product_id">Műtrágya termék</label>
+              <select id="fertilizer_product_id" name="fertilizer_product_id" class="form-control">
+                <option value="">– Válassz terméket –</option>
+                {% for brand, products in fertilizer_brands.items() %}
+                <optgroup label="{{ brand }}">
+                  {% for p in products %}
+                  <option value="{{ p.id }}">{{ p.product_name }} (NPK: {{ p.npk }})</option>
+                  {% endfor %}
+                </optgroup>
+                {% endfor %}
+              </select>
+            </div>
+            <div id="fert-auto-info" class="product-auto-fill-info"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="amount_per_sqm">Kiszórási mennyiség (g/m²)</label>
+          <input type="number" id="amount_per_sqm" name="amount_per_sqm" class="form-control" step="0.1" min="0" placeholder="pl. 30">
+          <p class="form-hint">A legtöbb gyeptrágya 25–35 g/m² adagolást javasol.</p>
+        </div>
+
+      {% elif log_type == 'aeration' %}
+        <div class="form-group">
+          <label class="form-label" for="method">Szellőztetési módszer</label>
+          <select id="method" name="method" class="form-control">
+            <option value="">– Válassz –</option>
+            {% for m in ['Tüskés villa', 'Tömörítő henger', 'Szellőztető gép (mag)', 'Lyukasztó gép', 'Talajlazító'] %}
+            <option value="{{ m }}">{{ m }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="switch">
+            <input type="checkbox" name="overseeded" id="overseeded">
+            <span class="switch-track"></span>
+            <span style="font-size:0.875rem; color:var(--text-secondary);">Felülvetés is történt (fűmag szórás)</span>
+          </label>
+        </div>
+
+      {% elif log_type == 'weed' %}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-5);">
+          <div class="form-group">
+            <label class="form-label" for="method">Gyomirtási módszer</label>
+            <select id="method" name="method" class="form-control">
+              <option value="">– Válassz –</option>
+              {% for m in ['Kézi kiszedés', 'Vegyszeres', 'Mechanikus (motoros)'] %}
+              <option value="{{ m }}">{{ m }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="severity">Súlyosság</label>
+            <select id="severity" name="severity" class="form-control">
+              <option value="">– Válassz –</option>
+              {% for s in ['Enyhe', 'Közepes', 'Súlyos'] %}
+              <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="product_name">Felhasznált termék neve</label>
+          <input type="text" id="product_name" name="product_name" class="form-control" placeholder="pl. Roundup Express">
+        </div>
+
+      {% elif log_type == 'pest' %}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-5);">
+          <div class="form-group">
+            <label class="form-label" for="pest_type">Kártevő / betegség típusa</label>
+            <select id="pest_type" name="pest_type" class="form-control">
+              <option value="">– Válassz –</option>
+              {% for p in ['Gombás betegség', 'Rovarkár (cserebogár lárva)', 'Vakond', 'Gázkiszáradás', 'Rozsdabetegség', 'Egyéb'] %}
+              <option value="{{ p }}">{{ p }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="severity">Súlyosság</label>
+            <select id="severity" name="severity" class="form-control">
+              <option value="">– Válassz –</option>
+              {% for s in ['Enyhe', 'Közepes', 'Súlyos'] %}
+              <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="treatment">Kezelés / beavatkozás</label>
+          <input type="text" id="treatment" name="treatment" class="form-control" placeholder="pl. Fungicid permet, vakondcsapda stb.">
+        </div>
+      {% endif %}
+    </div>
+
+    {# ── MEGJEGYZÉS ÉS FOTÓ ── #}
+    <div class="card mb-6">
+      <h2 style="font-size:1rem; margin-bottom:var(--space-5); color:var(--text-secondary);">
+        <i class="fa-solid fa-note-sticky"></i> Megjegyzés és fotó
+      </h2>
+      <div class="form-group">
+        <label class="form-label" for="notes">Megjegyzés</label>
+        <textarea id="notes" name="notes" class="form-control" placeholder="Egyéb megfigyelések, tapasztalatok..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="photo">Fotó melléklet</label>
+        <input type="file" id="photo" name="photo" class="form-control" accept="image/*">
+        <img id="photo_preview" src="" alt="Előnézet" style="display:none; margin-top:var(--space-4); max-height:200px; border-radius:var(--radius-md); object-fit:cover;">
+      </div>
+    </div>
+
+    <div class="d-flex gap-3">
+      <button type="submit" class="btn btn-primary btn-lg" id="add-activity-submit-btn">
+        <i class="fa-solid fa-floppy-disk"></i> Mentés
+      </button>
+      <a href="{{ url_for('activities') }}" class="btn btn-secondary btn-lg">Mégsem</a>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function setFertTab(el, val) {
+  document.querySelectorAll('.product-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelector('input[name="fertilizer_type_source"][value="' + val + '"]').checked = true;
+  document.getElementById('fert-manual-section').style.display = val === 'manual' ? 'block' : 'none';
+  document.getElementById('fert-product-section').style.display = val === 'product' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

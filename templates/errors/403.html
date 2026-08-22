@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}403 – Hozzáférés megtagadva{% endblock %}
+
+{% block page_header %}{% endblock %}
+
+{% block content %}
+<div class="empty-state" style="min-height:60vh; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+  <div style="font-size:6rem; margin-bottom:var(--space-4);">🚫</div>
+  <h1 style="font-size:5rem; font-weight:800; font-family:'Outfit',sans-serif; color:var(--color-danger); line-height:1;">403</h1>
+  <div class="empty-state-title" style="margin-top:var(--space-4);">Hozzáférés megtagadva</div>
+  <p class="empty-state-text">
+    Nincs jogosultságod ennek az oldalnak a megtekintéséhez.
+    Ez az erőforrás más felhasználóhoz tartozik.
+  </p>
+  <div class="d-flex gap-3">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg" id="error-403-home-btn">
+      <i class="fa-solid fa-house"></i> Vissza a főoldalra
+    </a>
+    <a href="javascript:history.back()" class="btn btn-secondary btn-lg">
+      <i class="fa-solid fa-arrow-left"></i> Előző oldal
+    </a>
+  </div>
+</div>
+{% endblock %}

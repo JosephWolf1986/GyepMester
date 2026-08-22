@@ -1,0 +1,50 @@
+# Python virtual environment
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# SQLite Adatbázis & dinamikus fájlok
+*.db
+*.sqlite
+*.sqlite3
+gyepmester.db
+
+# Környezeti változók & titkok
+.env
+.env.*
+!.env.example
+instance/
+.webassets-cache
+
+# Felhasználói feltöltések (kivéve a .gitkeep)
+static/uploads/*
+!static/uploads/.gitkeep
+
+# IDE és Editor konfigurációk
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Operációs rendszer fájlok
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logok és átmeneti fájlok
+*.log
+*.tmp
+check_output.txt

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Naptár{% endblock %}
+{% block meta_desc %}Gyepápolási naptár – havi áttekintés az összes tevékenységről.{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+  <div class="d-flex align-center justify-between">
+    <div>
+      <h1 class="page-title">
+        <i class="fa-solid fa-calendar-days" style="color:var(--color-primary-400); margin-right:var(--space-2);"></i>
+        Naptár
+      </h1>
+      <p class="page-subtitle">Havi gyepápolási eseménynapló</p>
+    </div>
+    {# Gyep váltó #}
+    {% if lawns | length > 1 %}
+    <div class="d-flex gap-2">
+      {% for lawn in lawns %}
+      <a href="{{ url_for('calendar', lawn_id=lawn.id, year=year, month=month) }}"
+         class="btn btn-sm {% if selected_lawn and selected_lawn.id == lawn.id %}btn-primary{% else %}btn-secondary{% endif %}">
+        🌿 {{ lawn.name }}
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+{# ── HÓNAP NAVIGÁCIÓ ── #}
+{% set prev_month = month - 1 if month > 1 else 12 %}
+{% set prev_year  = year if month > 1 else year - 1 %}
+{% set next_month = month + 1 if month < 12 else 1 %}
+{% set next_year  = year if month < 12 else year + 1 %}
+{% set month_names = ['', 'Január','Február','Március','Április','Május','Június','Július','Augusztus','Szeptember','Október','November','December'] %}
+
+<div class="d-flex align-center justify-between mb-6">
+  <a href="{{ url_for('calendar', lawn_id=selected_lawn.id if selected_lawn else '', year=prev_year, month=prev_month) }}"
+     class="btn btn-secondary" id="calendar-prev-btn">
+    <i class="fa-solid fa-chevron-left"></i> Előző
+  </a>
+  <h2 style="font-family:'Outfit',sans-serif; font-size:1.4rem; color:var(--text-primary);">
+    {{ year }}. {{ month_names[month] }}
+  </h2>
+  <a href="{{ url_for('calendar', lawn_id=selected_lawn.id if selected_lawn else '', year=next_year, month=next_month) }}"
+     class="btn btn-secondary" id="calendar-next-btn">
+    Következő <i class="fa-solid fa-chevron-right"></i>
+  </a>
+</div>
+
+{# ── JELMAGYARÁZAT ── #}
+<div class="d-flex gap-3 mb-4" style="flex-wrap:wrap;">
+  {% for color, label in [('#3b82f6','💧 Öntözés'),('#10b981','✂️ Nyírás'),('#f59e0b','🌱 Trágyázás'),('#8b5cf6','🌬️ Szellőztetés'),('#ef4444','🌿 Gyomirtás')] %}
+  <div class="d-flex align-center gap-2">
+    <div style="width:12px; height:12px; border-radius:50%; background:{{ color }};"></div>
+    <span class="text-xs text-muted">{{ label }}</span>
+  </div>
+  {% endfor %}
+</div>
+
+{# ── NAPTÁR RÁCS ── #}
+<div class="card" style="padding:var(--space-6);">
+  {# Napok fejléce #}
+  <div class="calendar-grid mb-2">
+    {% for day_name in ['Hétfő','Kedd','Szerda','Csütörtök','Péntek','Szombat','Vasárnap'] %}
+    <div style="text-align:center; font-size:0.72rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); padding:var(--space-2);">
+      {{ day_name[:3] }}
+    </div>
+    {% endfor %}
+  </div>
+
+  {# Napok generálása Python-ban kiszámítva #}
+  {# A Flask route-ban nincsenek átküldve a cellák, ezért Jinja2-vel generáljuk #}
+  {% set ns = namespace(cell=0) %}
+  {% set first_weekday = (year | string + '-' + '%02d' | format(month) + '-01') %}
+
+  {# Kiszámítjuk az 1.-je hét napját (0=H ... 6=V) #}
+  {# Mivel Jinja2-nek nincs datetime, a sablonba átvett 'events' listát használjuk #}
+  {# Az app.py már kiszámolja az events lista elemeit #}
+
+  {# Egyszerűsített megközelítés: extra_head-ben JavaScript-tel töltjük be #}
+  <div class="calendar-grid" id="calendar-cells">
+    {# Ez JS-sel töltődik be #}
+  </div>
+</div>
+
+{# ── ESEMÉNYEK LISTA (ha vannak) ── #}
+{% if events %}
+<div class="card mt-6">
+  <h2 style="font-size:1rem; margin-bottom:var(--space-4);">
+    <i class="fa-solid fa-list"></i> {{ month_names[month] }} eseményei
+  </h2>
+  {% set sorted_events = events | sort(attribute='date') %}
+  {% for event in sorted_events %}
+  <div class="d-flex align-center gap-4 mb-3" style="padding:var(--space-3) 0; border-bottom:1px solid var(--border-color);">
+    <div style="width:8px; height:8px; border-radius:50%; background:{{ event.color }}; flex-shrink:0;"></div>
+    <div style="color:var(--text-muted); font-size:0.85rem; min-width:80px;">
+      {{ event.date[8:10] }}. nap
+    </div>
+    <div style="font-weight:600; color:var(--text-primary);">{{ event.label }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if not selected_lawn %}
+<div class="empty-state mt-6">
+  <div class="empty-state-icon">📅</div>
+  <div class="empty-state-title">Nincs gyep profil</div>
+  <p class="empty-state-text">Hozz létre egy gyep profilt az eseménynaptár használatához.</p>
+  <a href="{{ url_for('new_profile') }}" class="btn btn-primary btn-lg">
+    <i class="fa-solid fa-plus"></i> Gyep létrehozása
+  </a>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Naptár generálás JavaScript-tel
+(function() {
+  const year  = {{ year }};
+  const month = {{ month }};  // 1-indexed
+  const eventsData = {{ events | tojson }};
+  const today = new Date();
+
+  // Az első nap hete (0=Sun)
+  const firstDay = new Date(year, month - 1, 1);
+  // Hétfőtől kezdve: 0=H, 1=K...6=V
+  let startOffset = firstDay.getDay() - 1;
+  if (startOffset < 0) startOffset = 6; // vasárnap = 6
+
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const container   = document.getElementById('calendar-cells');
+  if (!container) return;
+
+  // Előző hónap napjai
+  const prevMonthDays = new Date(year, month - 1, 0).getDate();
+  for (let i = startOffset - 1; i >= 0; i--) {
+    const cell = document.createElement('div');
+    cell.className = 'calendar-day other-month';
+    cell.innerHTML = `<span class="calendar-day-num">${prevMonthDays - i}</span>`;
+    container.appendChild(cell);
+  }
+
+  // Aktuális hónap napjai
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const cell = document.createElement('div');
+    cell.className = 'calendar-day';
+    cell.setAttribute('data-date', dateStr);
+
+    const isToday = (today.getFullYear() === year && today.getMonth() + 1 === month && today.getDate() === d);
+    if (isToday) cell.classList.add('today');
+
+    cell.innerHTML = `<span class="calendar-day-num">${d}</span>`;
+    container.appendChild(cell);
+  }
+
+  // Következő hónap napjai (teljes sor)
+  const totalCells = startOffset + daysInMonth;
+  const remaining  = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for (let d = 1; d <= remaining; d++) {
+    const cell = document.createElement('div');
+    cell.className = 'calendar-day other-month';
+    cell.innerHTML = `<span class="calendar-day-num">${d}</span>`;
+    container.appendChild(cell);
+  }
+
+  // Esemény pontok elhelyezése
+  if (typeof window.initCalendar === 'function') {
+    window.initCalendar(eventsData);
+  }
+})();
+</script>
+{% endblock %}

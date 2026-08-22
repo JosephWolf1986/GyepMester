@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Gyep Profiljaim{% endblock %}
+{% block meta_desc %}Az összes gyep profilod egy helyen – terület, helyszín, fűtípus és ápolási adatok.{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+  <div class="d-flex align-center justify-between">
+    <div>
+      <h1 class="page-title">
+        <i class="fa-solid fa-seedling" style="color:var(--color-primary-400); margin-right:var(--space-2);"></i>
+        Gyep Profiljaim
+      </h1>
+      <p class="page-subtitle">{{ lawns | length }} gyep profil</p>
+    </div>
+    <a href="{{ url_for('new_profile') }}" class="btn btn-primary" id="profiles-new-btn">
+      <i class="fa-solid fa-plus"></i> Új gyep
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+{% if lawns %}
+<div class="profile-grid">
+  {% for lawn in lawns %}
+  <div class="lawn-card fade-in">
+    <div class="lawn-card-image">
+      {% if lawn.photo %}
+        <img src="{{ url_for('static', filename='uploads/' + lawn.photo) }}" alt="{{ lawn.name }}">
+      {% else %}
+        🌿
+      {% endif %}
+    </div>
+    <div class="lawn-card-body">
+      <div class="lawn-card-name">{{ lawn.name }}</div>
+      <div class="lawn-card-meta">
+        <span class="badge badge-success">{{ lawn.area_sqm | int }} m²</span>
+        <span class="badge badge-gray"><i class="fa-solid fa-location-dot"></i> {{ lawn.location_city }}</span>
+        {% if lawn.soil_type %}
+        <span class="badge badge-info">{{ lawn.soil_type }}</span>
+        {% endif %}
+        {% if lawn.sun_exposure %}
+        <span class="badge badge-warning">☀️ {{ lawn.sun_exposure }}</span>
+        {% endif %}
+      </div>
+      {% if lawn.grass_type %}
+      <p class="text-sm text-muted" style="margin-top:var(--space-2);">
+        <i class="fa-solid fa-leaf"></i> {{ lawn.grass_type | truncate(60) }}
+      </p>
+      {% endif %}
+      <div style="margin-top:var(--space-4); display:flex; flex-direction:column; gap:var(--space-2);">
+        {% set lw = lawn.last_watering() %}
+        {% if lw %}
+        <div class="text-xs text-muted">
+          💧 Utoljára öntözve: <strong>{{ days_since(lw.date) }} napja</strong>
+        </div>
+        {% endif %}
+        {% set lm = lawn.last_mowing() %}
+        {% if lm %}
+        <div class="text-xs text-muted">
+          ✂️ Utoljára nyírva: <strong>{{ days_since(lm.date) }} napja</strong>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="lawn-card-footer">
+      <a href="{{ url_for('profile_detail', lawn_id=lawn.id) }}" class="btn btn-sm btn-secondary" id="profile-detail-btn-{{ lawn.id }}">
+        <i class="fa-solid fa-eye"></i> Részletek
+      </a>
+      <a href="{{ url_for('edit_profile', lawn_id=lawn.id) }}" class="btn btn-sm btn-secondary" id="profile-edit-btn-{{ lawn.id }}">
+        <i class="fa-solid fa-pen"></i> Szerkesztés
+      </a>
+      <form method="POST" action="{{ url_for('delete_profile', lawn_id=lawn.id) }}" style="margin-left:auto;">
+        <button
+          type="submit"
+          class="btn btn-sm btn-danger"
+          data-confirm="Biztosan törlöd a(z) '{{ lawn.name }}' profilt? Ez visszavonhatatlan!"
+          id="profile-delete-btn-{{ lawn.id }}"
+        >
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-state-icon">🌱</div>
+  <div class="empty-state-title">Még nincs gyep profilod</div>
+  <p class="empty-state-text">
+    Adj hozzá egy gyep profilt, hogy elkezdhess tevékenységeket naplózni és személyre szabott javaslatokat kapni.
+  </p>
+  <a href="{{ url_for('new_profile') }}" class="btn btn-primary btn-lg" id="profiles-empty-new-btn">
+    <i class="fa-solid fa-plus"></i> Első gyep létrehozása
+  </a>
+</div>
+{% endif %}
+
+{% endblock %}

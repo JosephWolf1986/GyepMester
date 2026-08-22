@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}404 – Az oldal nem található{% endblock %}
+
+{% block page_header %}{% endblock %}
+
+{% block content %}
+<div class="empty-state" style="min-height:60vh; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+  <div style="font-size:6rem; margin-bottom:var(--space-4);">🔍</div>
+  <h1 style="font-size:5rem; font-weight:800; font-family:'Outfit',sans-serif; color:var(--color-primary-400); line-height:1;">404</h1>
+  <div class="empty-state-title" style="margin-top:var(--space-4);">Az oldal nem található</div>
+  <p class="empty-state-text">
+    A keresett oldal nem létezik vagy már nem elérhető.
+    Lehet, hogy az URL-ben elgépelés történt.
+  </p>
+  <div class="d-flex gap-3">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg" id="error-404-home-btn">
+      <i class="fa-solid fa-house"></i> Vissza a főoldalra
+    </a>
+    <a href="javascript:history.back()" class="btn btn-secondary btn-lg">
+      <i class="fa-solid fa-arrow-left"></i> Előző oldal
+    </a>
+  </div>
+</div>
+{% endblock %}
