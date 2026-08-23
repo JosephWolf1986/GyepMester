@@ -82,6 +82,23 @@
           </dd>
         </div>
         {% endif %}
+        {% if lawn.lawn_stage %}
+        <div>
+          <dt class="text-xs text-muted">Gyep állapota</dt>
+          <dd class="font-bold" style="color:var(--text-primary);">
+            {% if lawn.lawn_stage == 'Friss vetés / Felülvetés' %}
+              🌱 Friss vetés
+              {% if lawn.seeding_date %}
+                <span class="text-xs text-muted font-normal">({{ lawn.seeding_date.strftime('%m. %d.') }} – {{ days_since(lawn.seeding_date) }}. nap)</span>
+              {% endif %}
+            {% elif lawn.lawn_stage == 'Vetés előtt áll' %}
+              🚜 Vetés előtt áll
+            {% else %}
+              🏡 Meglévő, beállt gyep
+            {% endif %}
+          </dd>
+        </div>
+        {% endif %}
         {% if lawn.cultivation_method %}
         <div>
           <dt class="text-xs text-muted">Művelés módja</dt>
@@ -172,6 +189,170 @@
 
   {# ── JOB PANEL ── #}
   <div>
+
+    {# ── INTELLIGENS ÖNTÖZÉSI TERV ── #}
+    {% if watering_plan %}
+    <div class="mowing-plan-card mb-6" style="border-top: 3px solid #3b82f6;">
+      <div class="mowing-plan-header">
+        <div class="mowing-plan-title">
+          <i class="fa-solid fa-droplet" style="color:#60a5fa;"></i>
+          Intelligens Öntözési Terv & Vízszükséglet
+        </div>
+        <span class="badge badge-{{ watering_plan.status_color }}">
+          {{ watering_plan.status_label }}
+        </span>
+      </div>
+
+      {% if watering_plan.stage_badge %}
+      <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-4); font-size: 0.85rem; color: #93c5fd;">
+        <i class="fa-solid fa-info-circle"></i> <strong>{{ watering_plan.stage_badge }}</strong>
+      </div>
+      {% endif %}
+
+      {% if watering_plan.fertilizer_flush_required %}
+      <div class="mowing-surge-alert" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.35); color: #fca5a5;">
+        <i class="fa-solid fa-triangle-exclamation" style="font-size:1.2rem; color:#ef4444;"></i>
+        <div>
+          <strong>SÜRGŐS BEMOSÓ ÖNTÖZÉS!</strong> Friss műtrágyázás történt. Azonnal öntözz 10–15 l/m² vízzel a perzselés elkerüléséhez!
+        </div>
+      </div>
+      {% endif %}
+
+      {% if watering_plan.weather_warning %}
+      <div class="flash flash-info mb-4" style="position:static; margin-bottom:var(--space-4);">
+        <i class="fa-solid fa-cloud-showers-heavy"></i>
+        <span>{{ watering_plan.weather_warning }}</span>
+      </div>
+      {% endif %}
+
+      <div class="mowing-stat-grid">
+        <div class="mowing-stat-item">
+          <div class="mowing-stat-label">Gyakoriság</div>
+          <div class="mowing-stat-value" style="color:#60a5fa;">
+            {% if watering_plan.stage == 'fresh_seed' %}Napi 3–5x
+            {% elif watering_plan.interval_days %}{{ watering_plan.interval_days }} naponta
+            {% else %}–{% endif %}
+          </div>
+          <div class="mowing-stat-sub">{{ watering_plan.frequency_label }}</div>
+        </div>
+
+        <div class="mowing-stat-item">
+          <div class="mowing-stat-label">Vízmennyiség</div>
+          <div class="mowing-stat-value" style="color:var(--color-primary-400);">
+            {{ watering_plan.water_amount_l_per_sqm }} l/m²
+          </div>
+          <div class="mowing-stat-sub">
+            Összesen: <strong>{{ watering_plan.total_liters }} l</strong> ({{ watering_plan.total_m3 }} m³)
+          </div>
+        </div>
+
+        <div class="mowing-stat-item">
+          <div class="mowing-stat-label">Ideális Időpont</div>
+          <div class="mowing-stat-value" style="font-size:1rem; color:var(--text-primary); margin-top:4px;">
+            {{ watering_plan.recommended_time }}
+          </div>
+          <div class="mowing-stat-sub">
+            {% if watering_plan.days_since_water is not none %}
+              Utolsó: {{ watering_plan.days_since_water }} napja
+            {% else %}
+              Gombásodás ellen
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h4 style="font-size:0.82rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:var(--space-2);">
+          <i class="fa-solid fa-water" style="color:#60a5fa;"></i> Szakmai Indoklás & Befolyásoló Tényezők:
+        </h4>
+        <ul class="mowing-reasons-list">
+          {% for r in watering_plan.reasoning %}
+          <li class="mowing-reason-item" style="border-left-color:#3b82f6;">{{ r }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── INTELLIGENS FŰNYÍRÁSI TERV ── #}
+    {% if mowing_plan %}
+    <div class="mowing-plan-card mb-6">
+      <div class="mowing-plan-header">
+        <div class="mowing-plan-title">
+          <i class="fa-solid fa-scissors" style="color:var(--color-primary-400);"></i>
+          Intelligens Nyírási Terv & Elemzés
+        </div>
+        <span class="badge badge-{{ mowing_plan.status_color }}">
+          {{ mowing_plan.status_label }}
+        </span>
+      </div>
+
+      {% if mowing_plan.fertilizer_impact %}
+      <div class="mowing-surge-alert">
+        <i class="fa-solid fa-bolt" style="font-size:1.1rem; color:var(--color-accent-400);"></i>
+        <div>
+          <strong>{{ mowing_plan.fertilizer_impact.badge }}</strong> – {{ mowing_plan.fertilizer_impact.text }}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if mowing_plan.weather_warning %}
+      <div class="flash flash-warning mb-4" style="position:static; margin-bottom:var(--space-4);">
+        <i class="fa-solid fa-cloud-showers-heavy"></i>
+        <span>{{ mowing_plan.weather_warning }}</span>
+      </div>
+      {% endif %}
+
+      <div class="mowing-stat-grid">
+        <div class="mowing-stat-item">
+          <div class="mowing-stat-label">Javasolt Gyakoriság</div>
+          <div class="mowing-stat-value" style="color:var(--color-primary-400);">
+            {{ mowing_plan.interval_days }} naponta
+          </div>
+          <div class="mowing-stat-sub">{{ mowing_plan.frequency_label }}</div>
+        </div>
+
+        <div class="mowing-stat-item">
+          <div class="mowing-stat-label">Vágási Magasság</div>
+          <div class="mowing-stat-value" style="color:var(--color-accent-400);">
+            {{ mowing_plan.recommended_height_cm }} cm
+          </div>
+          <div class="mowing-stat-sub">Optimális tarló</div>
+        </div>
+
+        <div class="mowing-stat-item">
+          <div class="mowing-stat-label">Utolsó Nyírás</div>
+          <div class="mowing-stat-value">
+            {% if mowing_plan.days_since_mow is not none %}
+              {{ mowing_plan.days_since_mow }} napja
+            {% else %}
+              –
+            {% endif %}
+          </div>
+          <div class="mowing-stat-sub">
+            {% if mowing_plan.due_in is not none %}
+              {% if mowing_plan.due_in > 0 %}Esedékes {{ mowing_plan.due_in }} nap múlva
+              {% elif mowing_plan.due_in == 0 %}Ma esedékes!
+              {% else %}Késésben: {{-mowing_plan.due_in}} napja{% endif %}
+            {% else %}
+              Nincs adat
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h4 style="font-size:0.82rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:var(--space-2);">
+          <i class="fa-solid fa-chart-line" style="color:var(--color-primary-400);"></i> Szakmai Indoklás & Befolyásoló Tényezők:
+        </h4>
+        <ul class="mowing-reasons-list">
+          {% for r in mowing_plan.reasoning %}
+          <li class="mowing-reason-item">{{ r }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endif %}
 
     {# Javaslatok #}
     {% if suggestions %}

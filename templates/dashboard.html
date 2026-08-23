@@ -60,34 +60,44 @@
 
   {% for lawn in lawns[:3] %}
   <div class="card fade-in">
+    {% set wplan = calculate_watering_plan(lawn, weather) %}
     <div class="card-header">
       <div class="card-icon blue">💧</div>
+      <span class="badge badge-{{ wplan.status_color }}" style="font-size:0.65rem;">
+        {% if wplan.stage == 'fresh_seed' %}Napi 3–5x
+        {% elif wplan.interval_days %}{{ wplan.interval_days }} naponta
+        {% else %}–{% endif %}
+      </span>
     </div>
     {% set lw = lawn.last_watering() %}
     {% if lw %}
       <div class="card-value">{{ days_since(lw.date) }}</div>
       <div class="card-label">Napja öntözve</div>
-      <div class="card-stat">{{ lawn.name }} · {{ lw.date.strftime('%m. %d.') }}</div>
+      <div class="card-stat">{{ lawn.name }} · {{ wplan.status_label }}</div>
     {% else %}
       <div class="card-value" style="font-size:1.2rem; color:var(--text-muted)">–</div>
       <div class="card-label">Öntözés</div>
-      <div class="card-stat">{{ lawn.name }} – nincs adat</div>
+      <div class="card-stat">{{ lawn.name }} · {{ wplan.water_amount_l_per_sqm }} l/m² javasolt</div>
     {% endif %}
   </div>
 
   <div class="card fade-in">
+    {% set mplan = calculate_mowing_plan(lawn, weather) %}
     <div class="card-header">
       <div class="card-icon green">✂️</div>
+      <span class="badge badge-{{ mplan.status_color }}" style="font-size:0.65rem;">
+        {{ mplan.interval_days }} naponta
+      </span>
     </div>
     {% set lm = lawn.last_mowing() %}
     {% if lm %}
       <div class="card-value">{{ days_since(lm.date) }}</div>
       <div class="card-label">Napja nyírva</div>
-      <div class="card-stat">{{ lawn.name }} · {{ lm.date.strftime('%m. %d.') }}</div>
+      <div class="card-stat">{{ lawn.name }} · {{ mplan.status_label }}</div>
     {% else %}
       <div class="card-value" style="font-size:1.2rem; color:var(--text-muted)">–</div>
       <div class="card-label">Nyírás</div>
-      <div class="card-stat">{{ lawn.name }} – nincs adat</div>
+      <div class="card-stat">{{ lawn.name }} · Javasolt: {{ mplan.interval_days }} naponta</div>
     {% endif %}
   </div>
   {% endfor %}

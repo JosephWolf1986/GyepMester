@@ -68,13 +68,57 @@
       </div>
     </div>
 
-    {# ── MŰVELÉS & NYÍRÁS ── #}
+    {# ── GYEP ÁLLAPOTA & MŰVELÉS ── #}
     <div class="card mb-6">
       <h2 class="form-section-label">
-        <i class="fa-solid fa-sliders"></i> Művelés & Kezelés
+        <i class="fa-solid fa-sliders"></i> Gyep Állapota & Kezelés
       </h2>
 
+      {# Gyep állapota választó #}
       <div class="form-group">
+        <label class="form-label">Gyep jelenlegi állapota *</label>
+        <div class="method-selector cols-3">
+          {% set stage_val = lawn.lawn_stage or 'Meglévő, beállt gyep' %}
+          <label class="method-option">
+            <input type="radio" name="lawn_stage" value="Meglévő, beállt gyep" {% if stage_val == 'Meglévő, beállt gyep' %}checked{% endif %} onchange="toggleLawnStage(this.value)">
+            <div class="method-card">
+              <div class="method-card-icon">🏡</div>
+              <div class="method-card-label">Meglévő gyep</div>
+              <div class="method-card-desc">Beállt, meglévő állomány</div>
+            </div>
+          </label>
+          <label class="method-option">
+            <input type="radio" name="lawn_stage" value="Friss vetés / Felülvetés" {% if stage_val == 'Friss vetés / Felülvetés' %}checked{% endif %} onchange="toggleLawnStage(this.value)">
+            <div class="method-card">
+              <div class="method-card-icon">🌿</div>
+              <div class="method-card-label">Friss vetés</div>
+              <div class="method-card-desc">Kelési, csírázási fázisban</div>
+            </div>
+          </label>
+          <label class="method-option">
+            <input type="radio" name="lawn_stage" value="Vetés előtt áll" {% if stage_val == 'Vetés előtt áll' %}checked{% endif %} onchange="toggleLawnStage(this.value)">
+            <div class="method-card">
+              <div class="method-card-icon">🚜</div>
+              <div class="method-card-label">Vetés előtt áll</div>
+              <div class="method-card-desc">Magágy előkészítés alatt</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      {# Vetés dátuma (ha friss vetés) #}
+      <div class="form-group" id="seeding-date-group" style="{% if stage_val != 'Friss vetés / Felülvetés' %}display:none;{% endif %} margin-top: var(--space-4); background: rgba(34,197,94,0.06); border: 1px dashed var(--border-color-hover); border-radius: var(--radius-md); padding: var(--space-4);">
+        <label class="form-label" for="seeding_date">
+          <i class="fa-solid fa-calendar-check" style="color:var(--color-primary-400);"></i> Vetés dátuma
+        </label>
+        <input type="date" id="seeding_date" name="seeding_date"
+               class="form-control"
+               value="{{ lawn.seeding_date.strftime('%Y-%m-%d') if lawn.seeding_date else '' }}"
+               max="{{ now().strftime('%Y-%m-%d') }}">
+        <p class="form-hint">A rendszer a vetés napjától számítja a 21 napos kritikus csíráztatási öntözést.</p>
+      </div>
+
+      <div class="form-group" style="margin-top: var(--space-6);">
         <label class="form-label">Művelés módja</label>
         <div class="method-selector cols-3">
           {% set cult_val = lawn.cultivation_method or 'Normál' %}
@@ -369,6 +413,13 @@
 
 {% block extra_scripts %}
 <script>
+function toggleLawnStage(val) {
+  const grp = document.getElementById('seeding-date-group');
+  if (grp) {
+    grp.style.display = (val === 'Friss vetés / Felülvetés') ? 'block' : 'none';
+  }
+}
+
 function setGrassTab(el, val) {
   document.querySelectorAll('.product-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');

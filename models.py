@@ -108,6 +108,10 @@ class LawnProfile(db.Model):
     cultivation_method = db.Column(db.String(50))  # Extenzív, Normál, Intenzív
     mowing_method = db.Column(db.String(50))       # Kézi, Gépi (fűnyíró)
 
+    # Gyep állapota & vetés
+    lawn_stage = db.Column(db.String(50), default='Meglévő, beállt gyep')  # 'Vetés előtt áll', 'Friss vetés / Felülvetés', 'Meglévő, beállt gyep'
+    seeding_date = db.Column(db.Date)              # Vetés dátuma (ha friss vetés)
+
     # Fűnyírókés előzmény
     blade_sharpened_at = db.Column(db.Date)        # Utolsó élezés dátuma
 

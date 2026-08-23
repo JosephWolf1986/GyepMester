@@ -11,7 +11,7 @@ from config import Config
 from models import (db, User, LawnProfile, GrassSeedProduct, FertilizerProduct,
                     WateringLog, MowingLog, FertilizingLog, AerationLog, WeedLog, PestLog)
 from seed_data import seed_products
-from utils.suggestions import generate_suggestions
+from utils.suggestions import generate_suggestions, calculate_mowing_plan, calculate_watering_plan
 from utils.weather import get_weather
 from utils.helpers import save_photo, delete_photo, days_since
 
@@ -38,6 +38,8 @@ def load_user(user_id):
 # Jinja2 segédfüggvények
 app.jinja_env.globals['days_since'] = days_since
 app.jinja_env.globals['now'] = datetime.now
+app.jinja_env.globals['calculate_mowing_plan'] = calculate_mowing_plan
+app.jinja_env.globals['calculate_watering_plan'] = calculate_watering_plan
 
 
 # =============================================================================
@@ -180,6 +182,16 @@ def new_profile():
         grass_type = request.form.get('grass_type', '').strip()
         cultivation_method = request.form.get('cultivation_method', '')
         mowing_method = request.form.get('mowing_method', '')
+        lawn_stage = request.form.get('lawn_stage', 'Meglévő, beállt gyep')
+
+        # Vetés dátuma
+        seeding_date_str = request.form.get('seeding_date', '').strip()
+        seeding_date = None
+        if seeding_date_str and lawn_stage == 'Friss vetés / Felülvetés':
+            try:
+                seeding_date = datetime.strptime(seeding_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass
 
         # Fűnyírókés élezési dátum
         blade_date_str = request.form.get('blade_sharpened_at', '').strip()
@@ -228,6 +240,8 @@ def new_profile():
                 photo=photo_filename,
                 cultivation_method=cultivation_method or None,
                 mowing_method=mowing_method or None,
+                lawn_stage=lawn_stage or 'Meglévő, beállt gyep',
+                seeding_date=seeding_date,
                 blade_sharpened_at=blade_sharpened_at,
             )
             db.session.add(lawn)
@@ -279,10 +293,20 @@ def profile_detail(lawn_id):
     lawn = LawnProfile.query.get_or_404(lawn_id)
     if lawn.user_id != current_user.id:
         abort(403)
-    suggestions = generate_suggestions(lawn)
+    
+    weather_data = None
+    if app.config.get('OPENWEATHER_API_KEY'):
+        weather_data = get_weather(lawn.location_city, app.config['OPENWEATHER_API_KEY'])
+
+    mowing_plan = calculate_mowing_plan(lawn, weather_data)
+    watering_plan = calculate_watering_plan(lawn, weather_data)
+    suggestions = generate_suggestions(lawn, weather_data)
     recent_waterings = lawn.watering_logs.order_by(WateringLog.date.desc()).limit(5).all()
+    
     return render_template('profile/detail.html', lawn=lawn, suggestions=suggestions,
-                           recent_waterings=recent_waterings)
+                           recent_waterings=recent_waterings,
+                           mowing_plan=mowing_plan, watering_plan=watering_plan,
+                           weather=weather_data)
 
 
 @app.route('/profiles/<int:lawn_id>/edit', methods=['GET', 'POST'])
@@ -315,6 +339,17 @@ def edit_profile(lawn_id):
         grass_type = request.form.get('grass_type', '').strip()
         lawn.cultivation_method = request.form.get('cultivation_method', '') or None
         lawn.mowing_method = request.form.get('mowing_method', '') or None
+        lawn.lawn_stage = request.form.get('lawn_stage', 'Meglévő, beállt gyep')
+
+        # Vetés dátuma
+        seeding_date_str = request.form.get('seeding_date', '').strip()
+        if seeding_date_str and lawn.lawn_stage == 'Friss vetés / Felülvetés':
+            try:
+                lawn.seeding_date = datetime.strptime(seeding_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+        else:
+            lawn.seeding_date = None
 
         # Fűnyírókés élezési dátum
         blade_date_str = request.form.get('blade_sharpened_at', '').strip()
