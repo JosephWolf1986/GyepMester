@@ -223,7 +223,13 @@ pip install -r requirements.txt
 Hozz létre egy `.env` fájlt a gyökérkönyvtárban:
 ```env
 SECRET_KEY=egyedi-titkos-kulcs
+
+# Helyi SQLite:
 DATABASE_URL=sqlite:///gyepmester.db
+
+# VAGY Supabase PostgreSQL:
+# DATABASE_URL=postgresql://postgres.PROJECT_REF:JELSZO@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=require
+
 OPENWEATHER_API_KEY=az_openweather_api_kulcsod
 ```
 
