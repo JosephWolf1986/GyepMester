@@ -26,7 +26,7 @@
 
     {# ── ALAPADATOK ── #}
     <div class="card mb-6">
-      <h2 style="font-size:1rem; margin-bottom:var(--space-5); color:var(--text-secondary);">
+      <h2 class="form-section-label">
         <i class="fa-solid fa-info-circle"></i> Alapadatok
       </h2>
 
@@ -48,7 +48,7 @@
 
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-5);">
         <div class="form-group">
-          <label class="form-label" for="soil_type">Talajtype</label>
+          <label class="form-label" for="soil_type">Talajtípus</label>
           <select id="soil_type" name="soil_type" class="form-control">
             <option value="">– Válassz –</option>
             {% for t in ['Homokos', 'Agyagos', 'Vályogos', 'Tőzeges'] %}
@@ -68,9 +68,70 @@
       </div>
     </div>
 
+    {# ── MŰVELÉS & NYÍRÁS ── #}
+    <div class="card mb-6">
+      <h2 class="form-section-label">
+        <i class="fa-solid fa-sliders"></i> Művelés & Kezelés
+      </h2>
+
+      <div class="form-group">
+        <label class="form-label">Művelés módja</label>
+        <div class="method-selector cols-3">
+          {% set cult_val = request.form.get('cultivation_method', '') %}
+          <label class="method-option">
+            <input type="radio" name="cultivation_method" value="Extenzív" {% if cult_val == 'Extenzív' %}checked{% endif %}>
+            <div class="method-card">
+              <div class="method-card-icon">🌾</div>
+              <div class="method-card-label">Extenzív</div>
+              <div class="method-card-desc">Minimális beavatkozás, természetközeli</div>
+            </div>
+          </label>
+          <label class="method-option">
+            <input type="radio" name="cultivation_method" value="Normál" {% if cult_val == 'Normál' or not cult_val %}checked{% endif %}>
+            <div class="method-card">
+              <div class="method-card-icon">🌿</div>
+              <div class="method-card-label">Normál</div>
+              <div class="method-card-desc">Rendszeres karbantartás, átlagos gondozás</div>
+            </div>
+          </label>
+          <label class="method-option">
+            <input type="radio" name="cultivation_method" value="Intenzív" {% if cult_val == 'Intenzív' %}checked{% endif %}>
+            <div class="method-card">
+              <div class="method-card-icon">💪</div>
+              <div class="method-card-label">Intenzív</div>
+              <div class="method-card-desc">Fokozott gondozás, prémium állapot</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: var(--space-5);">
+        <label class="form-label">Nyírás módja</label>
+        <div class="method-selector cols-2">
+          {% set mow_val = request.form.get('mowing_method', '') %}
+          <label class="method-option">
+            <input type="radio" name="mowing_method" value="Kézi" {% if mow_val == 'Kézi' %}checked{% endif %}>
+            <div class="method-card">
+              <div class="method-card-icon">🧑‍🌾</div>
+              <div class="method-card-label">Kézi</div>
+              <div class="method-card-desc">Kézi fűnyírás, precíz kontroll</div>
+            </div>
+          </label>
+          <label class="method-option">
+            <input type="radio" name="mowing_method" value="Gépi (fűnyíró)" {% if mow_val == 'Gépi (fűnyíró)' or not mow_val %}checked{% endif %}>
+            <div class="method-card">
+              <div class="method-card-icon">🚜</div>
+              <div class="method-card-label">Gépi (fűnyíró)</div>
+              <div class="method-card-desc">Motoros fűnyíró géppel</div>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
     {# ── FŰTÍPUS ── #}
     <div class="card mb-6">
-      <h2 style="font-size:1rem; margin-bottom:var(--space-5); color:var(--text-secondary);">
+      <h2 class="form-section-label">
         <i class="fa-solid fa-leaf"></i> Fűtípus
       </h2>
 
@@ -112,9 +173,167 @@
       </div>
     </div>
 
+    {# ── TÁPANYAG ELŐZMÉNY ── #}
+    <div class="card mb-6">
+      <h2 class="form-section-label">
+        <i class="fa-solid fa-flask"></i> Tápanyag előzmény
+        <span style="font-size:0.75rem; font-weight:400; color:var(--text-muted); margin-left:auto;">(opcionális)</span>
+      </h2>
+      <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:var(--space-5); margin-top:calc(-1 * var(--space-3));">
+        Ha korábban már trágyázta a gyepet, add meg az utolsó kijuttatás adatait.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label" for="last_fertilizing_date">Utolsó trágyázás dátuma</label>
+        <input type="date" id="last_fertilizing_date" name="last_fertilizing_date"
+               class="form-control"
+               value="{{ request.form.get('last_fertilizing_date', '') }}"
+               max="{{ now().strftime('%Y-%m-%d') }}">
+        <p class="form-hint">Ha kitöltöd, ezt az adatot a rendszer trágyázási naplóként rögzíti.</p>
+      </div>
+
+      {# Termék választó a trágyázáshoz #}
+      <div class="product-selector">
+        <div class="product-selector-tabs">
+          <label style="cursor:pointer;">
+            <input type="radio" name="init_fertilizer_type_source" value="product" checked style="display:none;">
+            <span class="product-tab active" onclick="setFertTab(this, 'product')">📦 Termék alapján</span>
+          </label>
+          <label style="cursor:pointer;">
+            <input type="radio" name="init_fertilizer_type_source" value="manual" style="display:none;">
+            <span class="product-tab" onclick="setFertTab(this, 'manual')">✏️ Kézi megadás</span>
+          </label>
+          <label style="cursor:pointer;">
+            <input type="radio" name="init_fertilizer_type_source" value="new" style="display:none;">
+            <span class="product-tab" onclick="setFertTab(this, 'new')">➕ Új termék</span>
+          </label>
+        </div>
+
+        {# Termékből #}
+        <div id="fert-product-section">
+          <div class="form-group">
+            <label class="form-label" for="init_fertilizer_product_id">Műtrágya termék</label>
+            <select id="init_fertilizer_product_id" name="init_fertilizer_product_id" class="form-control" onchange="onFertProductChange(this)">
+              <option value="">– Válassz terméket –</option>
+              {% for brand, products in fertilizer_brands.items() %}
+              <optgroup label="{{ brand }}">
+                {% for p in products %}
+                <option value="{{ p.id }}" data-npk="{{ p.npk }}" data-type="{{ p.fertilizer_type or '' }}" data-season="{{ p.season or '' }}">
+                  {{ p.product_name }} · {{ p.npk }}
+                </option>
+                {% endfor %}
+              </optgroup>
+              {% endfor %}
+            </select>
+          </div>
+          <div id="fert-auto-info" class="product-auto-fill-info"></div>
+        </div>
+
+        {# Kézi megadás #}
+        <div id="fert-manual-section" style="display:none;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);">
+            <div class="form-group">
+              <label class="form-label" for="init_fertilizer_type">Műtrágya típusa</label>
+              <input type="text" id="init_fertilizer_type" name="init_fertilizer_type" class="form-control" placeholder="pl. Nitrogéndús, Komplex NPK">
+            </div>
+            <div class="form-group">
+              <label class="form-label">NPK arány</label>
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:var(--space-2);">
+                <input type="number" name="init_npk_n" class="form-control" placeholder="N%" step="0.1" min="0">
+                <input type="number" name="init_npk_p" class="form-control" placeholder="P%" step="0.1" min="0">
+                <input type="number" name="init_npk_k" class="form-control" placeholder="K%" step="0.1" min="0">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# Új termék panel #}
+        <div id="fert-new-section" style="display:none;">
+          <div class="fertilizer-new-panel open" id="new-fert-panel">
+            <div class="panel-header">
+              <span class="panel-title"><i class="fa-solid fa-plus-circle"></i> Új műtrágya termék hozzáadása</span>
+              <span style="font-size:0.75rem; color:var(--text-muted);">Mentés után a termék katalógusba kerül</span>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);">
+              <div class="form-group">
+                <label class="form-label">Márka *</label>
+                <input type="text" id="new-fert-brand" class="form-control" placeholder="pl. Saját Kert Kft.">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Terméknév *</label>
+                <input type="text" id="new-fert-name" class="form-control" placeholder="pl. Tavaszi kert trágya">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">NPK értékek (N – P – K %)</label>
+              <div class="npk-grid">
+                <div>
+                  <input type="number" id="new-fert-n" class="form-control" placeholder="N%" step="0.1" min="0" oninput="updateNpkPreview()">
+                  <p class="form-hint" style="text-align:center;">Nitrogén</p>
+                </div>
+                <div>
+                  <input type="number" id="new-fert-p" class="form-control" placeholder="P%" step="0.1" min="0" oninput="updateNpkPreview()">
+                  <p class="form-hint" style="text-align:center;">Foszfor</p>
+                </div>
+                <div>
+                  <input type="number" id="new-fert-k" class="form-control" placeholder="K%" step="0.1" min="0" oninput="updateNpkPreview()">
+                  <p class="form-hint" style="text-align:center;">Kálium</p>
+                </div>
+              </div>
+              <div id="npk-preview" class="npk-badge-preview" style="display:none;">
+                <i class="fa-solid fa-atom"></i> <span id="npk-preview-text">–</span>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);">
+              <div class="form-group">
+                <label class="form-label">Típus</label>
+                <input type="text" id="new-fert-type" class="form-control" placeholder="pl. Nitrogéndús, Komplex">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Szezon</label>
+                <input type="text" id="new-fert-season" class="form-control" placeholder="pl. Tavasz, Egész szezon">
+              </div>
+            </div>
+
+            <div id="new-fert-error" style="display:none; color:var(--color-danger); font-size:0.83rem; margin-bottom:var(--space-3);"></div>
+
+            <button type="button" class="btn btn-primary" onclick="saveNewFertilizer()" id="save-new-fert-btn">
+              <i class="fa-solid fa-floppy-disk"></i> Termék mentése a katalógusba
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {# Rejtett mező az új termék id-jához #}
+      <input type="hidden" id="init_fertilizer_product_id_hidden" name="init_fertilizer_product_id">
+    </div>
+
+    {# ── FŰNYÍRÓKÉS ELŐZMÉNY ── #}
+    <div class="card mb-6">
+      <h2 class="form-section-label">
+        <i class="fa-solid fa-scissors"></i> Fűnyírókés előzmény
+        <span style="font-size:0.75rem; font-weight:400; color:var(--text-muted); margin-left:auto;">(opcionális)</span>
+      </h2>
+      <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:var(--space-5); margin-top:calc(-1 * var(--space-3));">
+        Rögzítsd, mikor volt utoljára megélezve a fűnyírókés.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label" for="blade_sharpened_at">Utolsó élezés dátuma</label>
+        <input type="date" id="blade_sharpened_at" name="blade_sharpened_at"
+               class="form-control"
+               value="{{ request.form.get('blade_sharpened_at', '') }}"
+               max="{{ now().strftime('%Y-%m-%d') }}">
+        <p class="form-hint">A rendszer emlékeztetni fog, ha a kés következő élezése esedékes.</p>
+      </div>
+    </div>
+
     {# ── FOTÓ ── #}
     <div class="card mb-6">
-      <h2 style="font-size:1rem; margin-bottom:var(--space-5); color:var(--text-secondary);">
+      <h2 class="form-section-label">
         <i class="fa-solid fa-camera"></i> Fotó (opcionális)
       </h2>
       <div class="form-group">
@@ -138,12 +357,160 @@
 
 {% block extra_scripts %}
 <script>
+// ── Fűtípus tab ──
 function setGrassTab(el, val) {
-  document.querySelectorAll('.product-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.product-tab').forEach(t => {
+    if (t.id && t.id.startsWith('grass-tab')) t.classList.remove('active');
+  });
   el.classList.add('active');
   document.querySelector('input[name="grass_type_source"][value="' + val + '"]').checked = true;
   document.getElementById('grass-manual-section').style.display = val === 'manual' ? 'block' : 'none';
   document.getElementById('grass-product-section').style.display = val === 'product' ? 'block' : 'none';
 }
+
+// ── Műtrágya tab ──
+function setFertTab(el, val) {
+  // Csak a fert tab-ok aktiválása (grass tab-ok érintetlenül hagyva)
+  el.closest('.product-selector-tabs').querySelectorAll('.product-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelector('input[name="init_fertilizer_type_source"][value="' + val + '"]').checked = true;
+  document.getElementById('fert-product-section').style.display  = val === 'product' ? 'block' : 'none';
+  document.getElementById('fert-manual-section').style.display   = val === 'manual'  ? 'block' : 'none';
+  document.getElementById('fert-new-section').style.display      = val === 'new'     ? 'block' : 'none';
+
+  // Ha termék tab, töröljük a hidden mezőt (majd a termék select tölti)
+  if (val !== 'product') {
+    document.getElementById('init_fertilizer_product_id_hidden').value = '';
+  }
+  // Ha product, frissítjük a select-ből
+  if (val === 'product') {
+    document.getElementById('init_fertilizer_product_id').name = 'init_fertilizer_product_id';
+  } else {
+    document.getElementById('init_fertilizer_product_id').name = '_init_fertilizer_product_id_disabled';
+  }
+}
+
+// ── Termék auto-fill ──
+function onFertProductChange(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const info = document.getElementById('fert-auto-info');
+  if (opt.value) {
+    const npk = opt.dataset.npk;
+    const type = opt.dataset.type;
+    const season = opt.dataset.season;
+    let html = `<strong>NPK:</strong> ${npk}`;
+    if (type)   html += ` &nbsp;·&nbsp; <strong>Típus:</strong> ${type}`;
+    if (season) html += ` &nbsp;·&nbsp; <strong>Szezon:</strong> ${season}`;
+    info.innerHTML = html;
+    info.classList.add('visible');
+  } else {
+    info.classList.remove('visible');
+  }
+}
+
+// ── NPK előnézet az új terméknél ──
+function updateNpkPreview() {
+  const n = parseFloat(document.getElementById('new-fert-n').value) || 0;
+  const p = parseFloat(document.getElementById('new-fert-p').value) || 0;
+  const k = parseFloat(document.getElementById('new-fert-k').value) || 0;
+  const preview = document.getElementById('npk-preview');
+  const text    = document.getElementById('npk-preview-text');
+  if (n > 0 || p > 0 || k > 0) {
+    text.textContent = `${n}-${p}-${k}`;
+    preview.style.display = 'inline-flex';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+// ── Új műtrágya mentése AJAX ──
+async function saveNewFertilizer() {
+  const btn = document.getElementById('save-new-fert-btn');
+  const errDiv = document.getElementById('new-fert-error');
+  const brand = document.getElementById('new-fert-brand').value.trim();
+  const name  = document.getElementById('new-fert-name').value.trim();
+  const n = parseFloat(document.getElementById('new-fert-n').value) || 0;
+  const p = parseFloat(document.getElementById('new-fert-p').value) || 0;
+  const k = parseFloat(document.getElementById('new-fert-k').value) || 0;
+  const type   = document.getElementById('new-fert-type').value.trim();
+  const season = document.getElementById('new-fert-season').value.trim();
+
+  errDiv.style.display = 'none';
+  if (!brand || !name) {
+    errDiv.textContent = 'A márka és a terméknév kötelező!';
+    errDiv.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mentés...';
+
+  try {
+    const resp = await fetch('/api/fertilizer-product/new', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        brand, product_name: name,
+        npk: `${n}-${p}-${k}`, npk_n: n, npk_p: p, npk_k: k,
+        fertilizer_type: type, season
+      })
+    });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      errDiv.textContent = data.error || 'Hiba történt a mentés során.';
+      errDiv.style.display = 'block';
+      return;
+    }
+
+    // Hozzáadjuk az új opciót a select-hez és kiválasztjuk
+    const sel = document.getElementById('init_fertilizer_product_id');
+    const opt = new Option(
+      `${data.brand} – ${data.product_name} · ${data.npk}`,
+      data.id,
+      true, true
+    );
+    opt.dataset.npk    = data.npk;
+    opt.dataset.type   = data.fertilizer_type || '';
+    opt.dataset.season = '';
+    sel.add(opt);
+
+    // Átváltás a termék tab-ra
+    setFertTab(
+      document.querySelector('.product-selector-tabs .product-tab:first-child'),
+      'product'
+    );
+    document.querySelector('input[name="init_fertilizer_type_source"][value="product"]').checked = true;
+    onFertProductChange(sel);
+
+    const msg = data.already_exists
+      ? '✓ Ez a termék már létezik a katalógusban – kiválasztva.'
+      : '✓ Új termék sikeresen mentve a katalógusba!';
+
+    btn.innerHTML = `<i class="fa-solid fa-check"></i> ${msg}`;
+    btn.style.background = 'rgba(34,197,94,0.2)';
+    btn.style.color = 'var(--color-primary-300)';
+
+  } catch(e) {
+    errDiv.textContent = 'Hálózati hiba. Próbáld újra.';
+    errDiv.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Termék mentése a katalógusba';
+  }
+}
+
+// ── Fotó előnézet ──
+document.getElementById('photo').addEventListener('change', function() {
+  const file = this.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.getElementById('photo_preview');
+      img.src = e.target.result;
+      img.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+});
 </script>
 {% endblock %}

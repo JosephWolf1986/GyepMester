@@ -82,6 +82,36 @@
           </dd>
         </div>
         {% endif %}
+        {% if lawn.cultivation_method %}
+        <div>
+          <dt class="text-xs text-muted">Művelés módja</dt>
+          <dd class="font-bold" style="color:var(--text-primary);">
+            {% if lawn.cultivation_method == 'Extenzív' %}🌾 Extenzív
+            {% elif lawn.cultivation_method == 'Intenzív' %}💪 Intenzív
+            {% else %}🌿 {{ lawn.cultivation_method }}
+            {% endif %}
+          </dd>
+        </div>
+        {% endif %}
+        {% if lawn.mowing_method %}
+        <div>
+          <dt class="text-xs text-muted">Nyírás módja</dt>
+          <dd class="font-bold" style="color:var(--text-primary);">
+            {% if lawn.mowing_method == 'Kézi' %}🧑‍🌾 Kézi
+            {% else %}🚜 {{ lawn.mowing_method }}
+            {% endif %}
+          </dd>
+        </div>
+        {% endif %}
+        {% if lawn.blade_sharpened_at %}
+        <div>
+          <dt class="text-xs text-muted">Kés élezve</dt>
+          <dd class="font-bold" style="color:var(--text-primary);">
+            ✂️ {{ lawn.blade_sharpened_at.strftime('%Y. %m. %d.') }}
+            <span class="text-xs text-muted font-normal">({{ days_since(lawn.blade_sharpened_at) }} napja)</span>
+          </dd>
+        </div>
+        {% endif %}
         <div>
           <dt class="text-xs text-muted">Létrehozva</dt>
           <dd class="text-sm" style="color:var(--text-muted);">{{ lawn.created_at.strftime('%Y. %m. %d.') }}</dd>

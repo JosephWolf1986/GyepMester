@@ -40,9 +40,9 @@ GyepMester/
     │   └── register.html
     ├── profile/               # Gyep profilok CRUD felülete
     │   ├── list.html
-    │   ├── new.html
-    │   ├── detail.html
-    │   └── edit.html
+    │   ├── new.html           # Új gyep felvétele (művelés, nyírás, tápanyag- és kés-előzmények)
+    │   ├── detail.html        # Részletes adatlap és gyorsműveletek
+    │   └── edit.html          # Profil szerkesztése
     ├── activities/            # Tevékenységnaplózás (6 típus)
     │   ├── list.html
     │   └── add.html
@@ -88,26 +88,53 @@ erDiagram
         string location_city
         string soil_type
         string sun_exposure
+        string cultivation_method
+        string mowing_method
+        date blade_sharpened_at
         string grass_type
+        int grass_seed_product_id FK
         string photo
+        datetime created_at
+        datetime updated_at
+    }
+
+    FertilizerProduct {
+        int id PK
+        string brand
+        string product_name
+        string npk
+        float npk_n
+        float npk_p
+        float npk_k
+        string fertilizer_type
+        string season
+        text description
     }
 
     FertilizingLog {
         int id PK
         int lawn_id FK
         date date
+        int fertilizer_product_id FK
         string fertilizer_type
         float npk_n
         float npk_p
         float npk_k
         float amount_per_sqm
+        string photo
+        text notes
     }
 ```
 
 ### Entitások és szerepük:
 1. **User**: Felhasználói fiókok kezelése, jelszóhashelés (`werkzeug.security`).
-2. **LawnProfile**: Egy-egy adott gyepfelület (pl. „Elülső kert”, „Hátsó udvar”) fizikai és biológiai paraméterei (terület m²-ben, város az időjáráshoz, talajtípus, napkitettség, fotó).
-3. **GrassSeedProduct & FertilizerProduct**: Beépített katalógusok (pl. *Barenbrug, DLF Turfline, ICL, COMPO, Genezis*), amelyekből egy kattintással feltölthetők a fajták és N-P-K arányok.
+2. **LawnProfile**: Egy-egy adott gyepfelület fizikai és gondozási paraméterei:
+   - Alapadatok: név, terület (m²), helyszín (város), talajtípus, napsütés kitettség, fotó.
+   - **Művelés módja (`cultivation_method`)**: `Extenzív`, `Normál`, `Intenzív`.
+   - **Nyírás módja (`mowing_method`)**: `Kézi`, `Gépi (fűnyíró)`.
+   - **Késélezési előzmény (`blade_sharpened_at`)**: A fűnyírókés legutóbbi élezésének dátuma.
+   - Fűtípus / Fűmag termék kapcsolat.
+3. **GrassSeedProduct & FertilizerProduct**: Beépített katalógusok (pl. *Barenbrug, DLF Turfline, ICL, COMPO, Genezis, T.Garden*), amelyekből automatikusan kitölthetők a fajták és N-P-K arányok. A felhasználók a felületen menet közben új termékeket is felvehetnek a katalógusba.
 4. **Napló Entitások** (*WateringLog, MowingLog, FertilizingLog, AerationLog, WeedLog, PestLog*): Események időpontjai, számszerű adatai (vágásmagasság cm, vízmennyiség l/m², kiszórt g/m², súlyosság), megjegyzések és képmellékletek.
 
 ---
@@ -125,11 +152,18 @@ A javaslatmotor dinamikusan értékeli az egyes gyepterületek állapotát és a
 - **Trágyázás**: Évszakhoz illeszkedő tápanyag-összetételt (tavasszal nitrogéndús, ősszel fagyállóságot javító káliumdús) és pontos gramm-mennyiséget javasol a gyep területe alapján.
 - **Gyepszellőztetés & Szezonális tippek**: Időzíti a március–áprilisi tavaszi indítást, a szeptemberi őszi regenerálást, valamint a téli taposásvédelmet.
 
-### B) Időjárás Integráció (`utils/weather.py`)
+### B) Új Gyep Létrehozása & Előzménykezelés
+Gyep felvételekor az alapadatokon kívül azonnal rögzíthetők:
+- **Művelési és nyírási beállítások** (vizuális kártyaválasztókkal).
+- **Tápanyag előzmény**: Megadható az utolsó trágyázás dátuma, és kiválasztható a termék a katalógusból, vagy kézzel rögzíthető. Mentéskor a rendszer automatikusan létrehozza a gyep első `FertilizingLog` naplóbejegyzését.
+- **Dinamikus műtrágya felvétel**: Ha a keresett műtrágya nincs a listában, az űrlapon belüli AJAX panellel azonnal hozzáadható az adatbázishoz, és rögtön kiválaszthatóvá válik.
+- **Fűnyírókés élezési dátum**: Későbbi emlékeztetők és karbantartás nyomon követésére.
+
+### C) Időjárás Integráció (`utils/weather.py`)
 - Lekéri az adott város pillanatnyi hőmérsékletét, páratartalmát, szélsebességét és csapadékadatait az **OpenWeatherMap API**-n keresztül.
 - Visszaadja a formázott adatokat és ikonokat a Dashboard és Javaslatok moduloknak.
 
-### C) Robusztus Médiafeldolgozó (`utils/helpers.py`)
+### D) Robusztus Médiafeldolgozó (`utils/helpers.py`)
 - Képfeltöltéskor a Pillow (PIL) könyvtár automatikusan:
   - Átméretezi a nagy felbontású fotókat maximum 1200×1200 képpontra.
   - Kezeli és javítja a mobiltelefonok EXIF tájolási információit (elkerülve a fejjel lefelé elforduló képeket).
@@ -147,9 +181,9 @@ A javaslatmotor dinamikusan értékeli az egyes gyepterületek állapotát és a
 | | `/logout` | `GET` | Munkamenet lezárása |
 | **Dashboard** | `/` | `GET` | Időjárás, gyorsstatisztikák, sürgős teendők |
 | **Gyep Profilok** | `/profiles` | `GET` | Felhasználó gyepjeinek listája |
-| | `/profiles/new` | `GET, POST` | Új profil létrehozása fotóval és fűmag választóval |
+| | `/profiles/new` | `GET, POST` | Új profil létrehozása fotóval, előzményekkel és beállításokkal |
 | | `/profiles/<id>` | `GET` | Részletes adatlap, előzmények, gyorsgombok |
-| | `/profiles/<id>/edit` | `GET, POST` | Profil módosítása |
+| | `/profiles/<id>/edit` | `GET, POST` | Profil és beállítások módosítása |
 | | `/profiles/<id>/delete`| `POST` | Profil és kapcsolódó naplók végleges törlése |
 | **Tevékenységek** | `/activities` | `GET` | Szűrhető napló (öntözés, nyírás, stb.) |
 | | `/activities/add/<type>` | `GET, POST` | Új bejegyzés rögzítése a kiválasztott típushoz |
@@ -157,6 +191,7 @@ A javaslatmotor dinamikusan értékeli az egyes gyepterületek állapotát és a
 | | `/suggestions` | `GET` | Részletes, csoportosított tanácsok gyepenként |
 | **AJAX API** | `/api/grass-product/<id>` | `GET` | Fűmag termékadatok JSON-ben (űrlap auto-kitöltés) |
 | | `/api/fertilizer-product/<id>` | `GET` | Műtrágya NPK adatok JSON-ben (űrlap auto-kitöltés) |
+| | `/api/fertilizer-product/new` | `POST` | Új műtrágya termék azonnali mentése a katalógusba |
 
 ---
 
@@ -165,9 +200,11 @@ A javaslatmotor dinamikusan értékeli az egyes gyepterületek állapotát és a
 - **Design System (`static/css/style.css`)**:
   - Modern mélysötét (`#0a0f0d`, `#111a14`) háttér, organikus fűzöld és smaragd kiemelésekkel (`#22c55e`, `#16a34a`).
   - Google Fonts tipográfia: *Outfit* a címekhez és *Inter* az adatokhoz/törzsszövegekhez.
+  - Vizuális rádiógomb-kártyák (`.method-selector`, `.method-card`) a művelési és nyírási módok intuitív kiválasztásához.
   - Teljesen reszponzív: asztali gépen fix oldalsáv, tableten kompakt ikon-nézet, mobilon alsó/felső igazítás.
-- **Dinamikus Interakciók (`static/js/main.js`)**:
-  - **Auto-Kitöltés**: Termék kiválasztásakor (pl. ICL műtrágya) aszinkron `fetch()` kéréssel lekéri az N-P-K adatokat és kitölti a mezőket.
+- **Dinamikus Interakciók (`static/js/main.js` & inline scriptek)**:
+  - **Auto-Kitöltés**: Termék kiválasztásakor (pl. fűmag vagy műtrágya) aszinkron `fetch()` kéréssel lekéri a tulajdonságokat és kitölti a mezőket.
+  - **Dinamikus Termék Mentés**: Új műtrágya létrehozása az űrlap elhagyása nélkül, NPK előnézettel.
   - **Azonnali Kép-előnézet**: Fájl kiválasztásakor még a szerverre küldés előtt megjeleníti a fotót.
   - **Önmegsemmisítő Értesítések**: A flash üzenetek 5 másodperc után animáltan eltűnnek.
   - **Naptár Renderelés**: Tiszta JavaScript generálja le a havi naprácsot, elhelyezve a színkódolt esemény-jelölőket.

@@ -164,6 +164,11 @@ def new_profile():
     for p in grass_products:
         brands.setdefault(p.brand, []).append(p)
 
+    fertilizer_products = FertilizerProduct.query.order_by(FertilizerProduct.brand).all()
+    fertilizer_brands = {}
+    for p in fertilizer_products:
+        fertilizer_brands.setdefault(p.brand, []).append(p)
+
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         area_sqm = request.form.get('area_sqm', '').strip()
@@ -173,6 +178,17 @@ def new_profile():
         grass_source = request.form.get('grass_type_source', 'manual')
         grass_product_id = request.form.get('grass_seed_product_id') or None
         grass_type = request.form.get('grass_type', '').strip()
+        cultivation_method = request.form.get('cultivation_method', '')
+        mowing_method = request.form.get('mowing_method', '')
+
+        # Fűnyírókés élezési dátum
+        blade_date_str = request.form.get('blade_sharpened_at', '').strip()
+        blade_sharpened_at = None
+        if blade_date_str:
+            try:
+                blade_sharpened_at = datetime.strptime(blade_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass
 
         errors = []
         if not name:
@@ -210,13 +226,51 @@ def new_profile():
                 grass_type_source=grass_source,
                 grass_seed_product_id=int(grass_product_id) if grass_product_id else None,
                 photo=photo_filename,
+                cultivation_method=cultivation_method or None,
+                mowing_method=mowing_method or None,
+                blade_sharpened_at=blade_sharpened_at,
             )
             db.session.add(lawn)
+            db.session.flush()  # lawn.id elkérése commit előtt
+
+            # Tápanyag előzmény – FertilizingLog létrehozása
+            last_fert_date_str = request.form.get('last_fertilizing_date', '').strip()
+            if last_fert_date_str:
+                try:
+                    last_fert_date = datetime.strptime(last_fert_date_str, '%Y-%m-%d').date()
+                    init_fert_source = request.form.get('init_fertilizer_type_source', 'manual')
+                    init_fert_product_id = request.form.get('init_fertilizer_product_id') or None
+                    init_fert_type = request.form.get('init_fertilizer_type', '').strip()
+                    init_npk_n = request.form.get('init_npk_n', type=float)
+                    init_npk_p = request.form.get('init_npk_p', type=float)
+                    init_npk_k = request.form.get('init_npk_k', type=float)
+
+                    if init_fert_source == 'product' and init_fert_product_id:
+                        fp = FertilizerProduct.query.get(int(init_fert_product_id))
+                        if fp:
+                            init_fert_type = fp.fertilizer_type
+                            init_npk_n, init_npk_p, init_npk_k = fp.npk_n, fp.npk_p, fp.npk_k
+
+                    fert_log = FertilizingLog(
+                        lawn_id=lawn.id,
+                        date=last_fert_date,
+                        fertilizer_product_id=int(init_fert_product_id) if init_fert_product_id else None,
+                        fertilizer_type=init_fert_type or None,
+                        fertilizer_type_source=init_fert_source,
+                        npk_n=init_npk_n,
+                        npk_p=init_npk_p,
+                        npk_k=init_npk_k,
+                        notes='(Profil létrehozáskor rögzített előzmény)',
+                    )
+                    db.session.add(fert_log)
+                except ValueError:
+                    pass  # Hibás dátum esetén kihagyjuk
+
             db.session.commit()
             flash(f'"{name}" gyep profil sikeresen létrehozva!', 'success')
             return redirect(url_for('profiles'))
 
-    return render_template('profile/new.html', brands=brands)
+    return render_template('profile/new.html', brands=brands, fertilizer_brands=fertilizer_brands)
 
 
 @app.route('/profiles/<int:lawn_id>')
@@ -243,6 +297,11 @@ def edit_profile(lawn_id):
     for p in grass_products:
         brands.setdefault(p.brand, []).append(p)
 
+    fertilizer_products = FertilizerProduct.query.order_by(FertilizerProduct.brand).all()
+    fertilizer_brands = {}
+    for p in fertilizer_products:
+        fertilizer_brands.setdefault(p.brand, []).append(p)
+
     if request.method == 'POST':
         lawn.name = request.form.get('name', '').strip()
         area = request.form.get('area_sqm', '').strip()
@@ -254,6 +313,18 @@ def edit_profile(lawn_id):
         grass_source = request.form.get('grass_type_source', 'manual')
         grass_product_id = request.form.get('grass_seed_product_id') or None
         grass_type = request.form.get('grass_type', '').strip()
+        lawn.cultivation_method = request.form.get('cultivation_method', '') or None
+        lawn.mowing_method = request.form.get('mowing_method', '') or None
+
+        # Fűnyírókés élezési dátum
+        blade_date_str = request.form.get('blade_sharpened_at', '').strip()
+        if blade_date_str:
+            try:
+                lawn.blade_sharpened_at = datetime.strptime(blade_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+        else:
+            lawn.blade_sharpened_at = None
 
         if grass_source == 'product' and grass_product_id:
             product = GrassSeedProduct.query.get(int(grass_product_id))
@@ -271,11 +342,45 @@ def edit_profile(lawn_id):
                                     app.config['UPLOAD_FOLDER'],
                                     app.config['ALLOWED_EXTENSIONS'])
 
+        # Tápanyag előzmény – FertilizingLog hozzáadása szerkesztéskor
+        last_fert_date_str = request.form.get('last_fertilizing_date', '').strip()
+        if last_fert_date_str:
+            try:
+                last_fert_date = datetime.strptime(last_fert_date_str, '%Y-%m-%d').date()
+                init_fert_source = request.form.get('init_fertilizer_type_source', 'manual')
+                init_fert_product_id = request.form.get('init_fertilizer_product_id') or None
+                init_fert_type = request.form.get('init_fertilizer_type', '').strip()
+                init_npk_n = request.form.get('init_npk_n', type=float)
+                init_npk_p = request.form.get('init_npk_p', type=float)
+                init_npk_k = request.form.get('init_npk_k', type=float)
+
+                if init_fert_source == 'product' and init_fert_product_id:
+                    fp = FertilizerProduct.query.get(int(init_fert_product_id))
+                    if fp:
+                        init_fert_type = fp.fertilizer_type
+                        init_npk_n, init_npk_p, init_npk_k = fp.npk_n, fp.npk_p, fp.npk_k
+
+                fert_log = FertilizingLog(
+                    lawn_id=lawn.id,
+                    date=last_fert_date,
+                    fertilizer_product_id=int(init_fert_product_id) if init_fert_product_id else None,
+                    fertilizer_type=init_fert_type or None,
+                    fertilizer_type_source=init_fert_source,
+                    npk_n=init_npk_n,
+                    npk_p=init_npk_p,
+                    npk_k=init_npk_k,
+                    notes='(Profil szerkesztésekor rögzített előzmény)',
+                )
+                db.session.add(fert_log)
+            except ValueError:
+                pass
+
         db.session.commit()
         flash('A gyep profil sikeresen frissítve!', 'success')
         return redirect(url_for('profile_detail', lawn_id=lawn.id))
 
-    return render_template('profile/edit.html', lawn=lawn, brands=brands)
+    return render_template('profile/edit.html', lawn=lawn, brands=brands,
+                           fertilizer_brands=fertilizer_brands)
 
 
 @app.route('/profiles/<int:lawn_id>/delete', methods=['POST'])
@@ -574,6 +679,64 @@ def api_grass_product(product_id):
         'usage': product.usage,
         'description': product.description,
     })
+
+
+@app.route('/api/fertilizer-product/new', methods=['POST'])
+@login_required
+def api_fertilizer_product_new():
+    """Új műtrágya termék létrehozása AJAX-on keresztül (profil formból)."""
+    data = request.get_json(silent=True) or {}
+    brand = (data.get('brand') or '').strip()
+    product_name = (data.get('product_name') or '').strip()
+    npk = (data.get('npk') or '').strip()
+    npk_n = data.get('npk_n') or 0.0
+    npk_p = data.get('npk_p') or 0.0
+    npk_k = data.get('npk_k') or 0.0
+    fertilizer_type = (data.get('fertilizer_type') or '').strip()
+    season = (data.get('season') or '').strip()
+
+    if not brand or not product_name:
+        return jsonify({'error': 'A márka és a terméknév kötelező.'}), 400
+
+    # Duplikáció ellenőrzés
+    existing = FertilizerProduct.query.filter_by(brand=brand, product_name=product_name).first()
+    if existing:
+        return jsonify({
+            'id': existing.id,
+            'brand': existing.brand,
+            'product_name': existing.product_name,
+            'npk': existing.npk,
+            'npk_n': existing.npk_n,
+            'npk_p': existing.npk_p,
+            'npk_k': existing.npk_k,
+            'fertilizer_type': existing.fertilizer_type,
+            'already_exists': True,
+        })
+
+    product = FertilizerProduct(
+        brand=brand,
+        product_name=product_name,
+        npk=npk or f"{int(npk_n)}-{int(npk_p)}-{int(npk_k)}",
+        npk_n=float(npk_n),
+        npk_p=float(npk_p),
+        npk_k=float(npk_k),
+        fertilizer_type=fertilizer_type or None,
+        season=season or None,
+    )
+    db.session.add(product)
+    db.session.commit()
+
+    return jsonify({
+        'id': product.id,
+        'brand': product.brand,
+        'product_name': product.product_name,
+        'npk': product.npk,
+        'npk_n': product.npk_n,
+        'npk_p': product.npk_p,
+        'npk_k': product.npk_k,
+        'fertilizer_type': product.fertilizer_type,
+        'already_exists': False,
+    }), 201
 
 
 @app.route('/api/fertilizer-product/<int:product_id>')

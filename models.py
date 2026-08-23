@@ -105,6 +105,11 @@ class LawnProfile(db.Model):
     # Egyéb jellemzők
     soil_type = db.Column(db.String(50))    # Homokos, Agyagos, Vályogos, Tőzeges
     sun_exposure = db.Column(db.String(50)) # Teljes nap, Félárnyas, Árnyékos
+    cultivation_method = db.Column(db.String(50))  # Extenzív, Normál, Intenzív
+    mowing_method = db.Column(db.String(50))       # Kézi, Gépi (fűnyíró)
+
+    # Fűnyírókés előzmény
+    blade_sharpened_at = db.Column(db.Date)        # Utolsó élezés dátuma
 
     # Fotó
     photo = db.Column(db.String(255))       # Fájlnév a static/uploads/ mappában

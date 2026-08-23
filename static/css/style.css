@@ -1126,3 +1126,172 @@ tbody tr:hover td {
 .w-100 { width: 100%; }
 .overflow-hidden { overflow: hidden; }
 .rounded-full { border-radius: var(--radius-full); }
+
+/* === MÓDSZER VÁLASZTÓ KÁRTYÁK (Művelés / Nyírás módja) === */
+.method-selector {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.method-selector.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.method-selector.cols-2 { grid-template-columns: repeat(2, 1fr); }
+
+.method-option {
+  cursor: pointer;
+  display: block;
+}
+
+.method-option input[type="radio"] { display: none; }
+
+.method-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-3);
+  background: var(--bg-elevated);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.method-card-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.method-card-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-family: 'Outfit', sans-serif;
+}
+
+.method-card-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.method-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(34,197,94,0.08), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.method-option:hover .method-card {
+  border-color: var(--border-color-hover);
+  transform: translateY(-2px);
+}
+
+.method-option:hover .method-card::before { opacity: 1; }
+
+.method-option input[type="radio"]:checked + .method-card {
+  border-color: var(--color-primary-500);
+  background: rgba(34, 197, 94, 0.1);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15), var(--shadow-sm);
+}
+
+.method-option input[type="radio"]:checked + .method-card .method-card-label {
+  color: var(--color-primary-400);
+}
+
+.method-option input[type="radio"]:checked + .method-card .method-card-icon {
+  filter: drop-shadow(0 0 8px rgba(34,197,94,0.5));
+}
+
+/* Pipa jel a kiválasztott kártyán */
+.method-option input[type="radio"]:checked + .method-card::after {
+  content: '✓';
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--color-primary-400);
+}
+
+/* === ÚJ MŰTRÁGYA MODAL PANEL === */
+.fertilizer-new-panel {
+  display: none;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color-hover);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-top: var(--space-4);
+  animation: fadeInDown 0.25s ease;
+}
+
+.fertilizer-new-panel.open { display: block; }
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fertilizer-new-panel .panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.fertilizer-new-panel .panel-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-primary-400);
+}
+
+.fertilizer-new-panel .npk-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.npk-badge-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary-300);
+  font-family: 'Outfit', monospace;
+  margin-top: var(--space-2);
+  transition: all var(--transition-fast);
+}
+
+/* Szekció elválasztó stíl a formban */
+.form-section-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-5);
+}
+
+.form-section-label i {
+  font-size: 1rem;
+  color: var(--color-primary-400);
+}
+
+@media (max-width: 640px) {
+  .method-selector.cols-3 { grid-template-columns: 1fr; }
+  .method-selector.cols-2 { grid-template-columns: 1fr 1fr; }
+  .fertilizer-new-panel .npk-grid { grid-template-columns: 1fr; }
+}
+
