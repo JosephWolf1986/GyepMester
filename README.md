@@ -1,63 +1,97 @@
-# 🌿 GyepMester – Rendszerdokumentáció és Architektúra Összefoglaló
+# 🌿 GyepMester – Okos Gyepápolási Webalkalmazás és Rendszerdokumentáció
 
-A **GyepMester** egy okos, személyre szabott webes gyepápolási és kertgondozási naplózó rendszer. Segítségével a felhasználók nyilvántarthatják kertjeik/gyepjeik paramétereit, naplózhatják a gondozási műveleteket (öntözés, fűnyírás, trágyázás, gyepszellőztetés, gyomirtás, kártevőirtás), valamint intelligens, időjárás- és évszakfüggő javaslatokat kapnak az optimális gyepápoláshoz.
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.1.0-000000?style=flat&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?style=flat&logo=sqlalchemy&logoColor=white)](https://www.sqlalchemy.org/)
+[![GitHub repo](https://img.shields.io/badge/GitHub-JosephWolf1986%2FGyepMester-181717?style=flat&logo=github&logoColor=white)](https://github.com/JosephWolf1986/GyepMester)
+
+A **GyepMester** egy személyre szabott, modern, intelligens gyepápolási és kertgondozási webalkalmazás. Segítségével a kerttulajdonosok professzionális szinten követhetik nyomon gyepeik állapotát, naplózhatják az elvégzett tevékenységeket (öntözés, fűnyírás, trágyázás, gyepszellőztetés, gyomkezelés, növényvédelem), és a valós helyi időjáráshoz, évszakhoz és talajadottságokhoz igazított okos javaslatokat kapnak a tökéletes pázsit eléréséhez.
+
+---
+
+## 📌 Főbb Funkciók
+
+- 📊 **Átfogó Műszerfal (Dashboard)**: Gyorsstatisztikák a területekről, utolsó ápolási dátumok, valós idejű helyi időjárás-előrejelzés és azonnali, sürgősség szerint rangsorolt teendők.
+- 🌱 **Részletes Gyep Profilok**:
+  - Alapadatok: név, terület (m²), helyszín (város), talajösszetétel, napfény-kitettség, fénykép.
+  - **Művelési mód**: Extenzív, Normál, Intenzív.
+  - **Nyírási technológia**: Kézi vagy Gépi fűnyírás.
+  - **Karbantartás-követés**: Fűnyírókés utolsó élezési dátumának rögzítése.
+  - **Kezdő tápanyag-előzmény**: Új gyep felvételekor közvetlenül megadható az utolsó trágyázás időpontja és terméke.
+- 📦 **Beépített Termékkatalógus & Dinamikus Bővíthetőség**:
+  - Előre feltöltött fűmagok (*Barenbrug, DLF Turfline, Eurogreen, Scotts*).
+  - Előre feltöltött műtrágyák (*ICL Landscaper Pro – köztük a Stress Control 16-5-22, All Round, Full Season, Compo, Genezis, T.Garden*).
+  - **Azonnali AJAX termékmentés**: Új műtrágyák az űrlap elhagyása nélkül rögzíthetők a rendszerbe NPK kalkulátorral.
+- 📋 **Tevékenységnaplózás (6 modul)**:
+  - 💧 **Öntözés**: időtartam (perc), kijuttatott vízmennyiség (l/m²), öntözési módszer.
+  - ✂️ **Fűnyírás**: vágási magasság (cm), gyep állapota vágás előtt.
+  - 🌱 **Trágyázás**: termékválasztó vagy egyedi N-P-K arányok megadása, kiszórt mennyiség (g/m²).
+  - 🌬️ **Gyepszellőztetés**: szellőztetési módszer, felülvetés rögzítése.
+  - 🌿 **Gyomirtás**: mechanikus / kézi / vegyszeres kezelés, fertőzöttségi szint, felhasznált termék.
+  - 🐛 **Kártevő- és Betegségvédelem**: gombásodás, rovarok, vakondtúrás, súlyosság, kezelési mód.
+- 🧠 **Okos Javaslatgeneráló Motor**:
+  - Számításba veszi a talajtípust, az évszakot, a csapadékot és az utolsó beavatkozás óta eltelt időt.
+  - Sürgősségi szintek (`high`, `medium`, `low`) pontos liter- és gramm-kalkulációkkal.
+- 📅 **Interaktív Havi Naptár**: Havi bontású, színkódolt naptár és idővonal az elvégzett munkák áttekintésére.
+- 🖼️ **Optimalizált Médiafeldolgozás**: Feltöltött képek automatikus átméretezése, EXIF tájolási hiba javítása és WebP formátumba tömörítése.
+- 🌙 **Modern Sötét Téma (Dark UI)**: Organikus smaragd és természet-zöld hangsúlyok, letisztult tipográfia, finom mikró-animációk és teljes reszponzivitás mobilon és asztali gépen.
 
 ---
 
 ## 1. 🏗️ Rendszerarchitektúra és Mappastruktúra
 
-Az alkalmazás a klasszikus **MVC (Model-View-Controller)** mintára épülő Flask architektúrát valósít meg, kiszolgáló oldali Jinja2 sablonozással és modern Vanilla CSS/JS alapú interaktív felülettel.
+Az alkalmazás az **MVC (Model-View-Controller)** mintát követi:
 
 ```
 GyepMester/
 │
 ├── app.py                     # Alkalmazás belépési pont, URL útvonalak, kontrollerek
-├── config.py                  # Konfiguráció (adatbázis, fájlfeltöltés, API kulcsok)
+├── config.py                  # Konfigurációs beállítások (DB, Upload, OpenWeather)
 ├── models.py                  # SQLAlchemy adatmodellek és relációk
-├── seed_data.py               # Beépített fűmag- és műtrágya-katalógus inicializáló
-├── requirements.txt           # Python függőségek listája
-├── README.md                  # Rendszerdokumentáció
+├── seed_data.py               # Fűmag- és műtrágya-katalógus inicializáló & frissítő
+├── requirements.txt           # Python csomagfüggőségek
+├── README.md                  # Projekt- és rendszerdokumentáció
+├── .env.example               # Példa környezeti változók fájlja
+├── .gitignore                 # Git verziókövetésből kizárt fájlok
 │
 ├── utils/                     # Üzleti logika és segédmodulok
 │   ├── helpers.py             # Képfeldolgozás (Pillow, WebP, EXIF), dátum kalkulációk
-│   ├── suggestions.py         # Intelligens szabálymotor (ápolási javaslatok generálása)
-│   └── weather.py             # OpenWeatherMap API integráció (aktuális + előrejelzés)
+│   ├── suggestions.py         # Intelligens szabálymotor (ápolási javaslatok)
+│   └── weather.py             # OpenWeatherMap API integráció (aktuális időjárás & előrejelzés)
 │
-├── static/                    # Statikus erőforrások
+├── static/                    # Statikus webes erőforrások
 │   ├── css/
-│   │   └── style.css          # Prémium sötét témájú CSS design tokens rendszer
+│   │   └── style.css          # Prémium sötét CSS design rendszer és tokenek
 │   ├── js/
 │   │   └── main.js            # Frontend interakciók, AJAX termék-kitöltő, naptár motor
-│   └── uploads/               # Feltöltött és optimalizált felhasználói fotók
+│   └── uploads/               # Feltöltött, optimalizált felhasználói fotók (.gitkeep-pel)
 │
 └── templates/                 # Jinja2 HTML sablonok
-    ├── base.html              # Fő layout (oldalsáv, felhasználói sáv, flash értesítések)
+    ├── base.html              # Fő alkalmazás layout (navigáció, értesítések)
     ├── dashboard.html         # Főoldali összefoglaló műszerfal
     ├── suggestions.html       # Priorizált javaslatok gyepenként
     ├── calendar.html          # Interaktív havi ápolási naptár
-    ├── auth/                  # Bejelentkezés és regisztráció
-    │   ├── login.html
-    │   └── register.html
-    ├── profile/               # Gyep profilok CRUD felülete
-    │   ├── list.html
-    │   ├── new.html           # Új gyep felvétele (művelés, nyírás, tápanyag- és kés-előzmények)
+    ├── auth/                  # Hitelesítés
+    │   ├── login.html         # Bejelentkezés
+    │   └── register.html      # Regisztráció
+    ├── profile/               # Gyep Profil CRUD
+    │   ├── list.html          # Profilok listája
+    │   ├── new.html           # Új gyep felvétele (művelés, nyírás, tápanyag-előzmények)
     │   ├── detail.html        # Részletes adatlap és gyorsműveletek
     │   └── edit.html          # Profil szerkesztése
-    ├── activities/            # Tevékenységnaplózás (6 típus)
-    │   ├── list.html
-    │   └── add.html
+    ├── activities/            # Tevékenységnapló
+    │   ├── list.html          # Szűrhető naplóbejegyzések listája
+    │   └── add.html           # Új tevékenység rögzítése
     └── errors/                # Egyedi hibaoldalak
-        ├── 403.html
-        └── 404.html
+        ├── 403.html           # Hozzáférés megtagadva
+        └── 404.html           # Nem található oldal
 ```
 
 ---
 
-## 2. 🗄️ Adatmodell és Adatbázis Architektúra
+## 2. 🗄️ Adatmodell és Adatbázis-séma
 
-Az adatbázis kezelését a **Flask-SQLAlchemy** ORM végzi (alapértelmezetten SQLite motorral, de PostgreSQL/MySQL-re is átirányítható a `DATABASE_URL` környezeti változóval).
-
-### Mermaid Adatbázis ER-Diagram:
+A rendszer adatbázis-kezelését a **Flask-SQLAlchemy** ORM látja el. Támogatja a helyi **SQLite** fájlalapú adatbázist és a felhőalapú **PostgreSQL** (pl. Supabase) rendszert is.
 
 ```mermaid
 erDiagram
@@ -74,8 +108,8 @@ erDiagram
 
     User {
         int id PK
-        string username
-        string email
+        string username UK
+        string email UK
         string password_hash
         datetime created_at
     }
@@ -126,116 +160,103 @@ erDiagram
     }
 ```
 
-### Entitások és szerepük:
-1. **User**: Felhasználói fiókok kezelése, jelszóhashelés (`werkzeug.security`).
-2. **LawnProfile**: Egy-egy adott gyepfelület fizikai és gondozási paraméterei:
-   - Alapadatok: név, terület (m²), helyszín (város), talajtípus, napsütés kitettség, fotó.
-   - **Művelés módja (`cultivation_method`)**: `Extenzív`, `Normál`, `Intenzív`.
-   - **Nyírás módja (`mowing_method`)**: `Kézi`, `Gépi (fűnyíró)`.
-   - **Késélezési előzmény (`blade_sharpened_at`)**: A fűnyírókés legutóbbi élezésének dátuma.
-   - Fűtípus / Fűmag termék kapcsolat.
-3. **GrassSeedProduct & FertilizerProduct**: Beépített katalógusok (pl. *Barenbrug, DLF Turfline, ICL, COMPO, Genezis, T.Garden*), amelyekből automatikusan kitölthetők a fajták és N-P-K arányok. A felhasználók a felületen menet közben új termékeket is felvehetnek a katalógusba.
-4. **Napló Entitások** (*WateringLog, MowingLog, FertilizingLog, AerationLog, WeedLog, PestLog*): Események időpontjai, számszerű adatai (vágásmagasság cm, vízmennyiség l/m², kiszórt g/m², súlyosság), megjegyzések és képmellékletek.
-
 ---
 
-## 3. 🧠 Intelligens Funkciók és Üzleti Logika
+## 3. 🌐 Végpontok és Útvonal-architektúra (`app.py`)
 
-### A) Szabályalapú Javaslatmotor (`utils/suggestions.py`)
-A javaslatmotor dinamikusan értékeli az egyes gyepterületek állapotát és a következő szempontok alapján állít elő teendőket:
-- **Öntözés**:
-  - Figyelembe veszi az utolsó öntözés óta eltelt napokat.
-  - Súlyozza a talajtípust (pl. a homokos talaj 5 naponta, az agyagos 9 naponta igényel öntözést).
-  - Évszak és időjárás érzékenység: ha az OpenWeather API szerint esett az eső (`rain_1h > 0`), a rendszer jelzi, hogy az öntözés kihagyható.
-  - Riasztási szintek: `low`, `medium`, `high` (sürgős kiszáradásveszély esetén azonnali liter-kalkulációval a területre számolva).
-- **Fűnyírás**: Évszakonként eltérő vágási ciklusokat és optimális fűmagasságot ajánl (pl. nyári hőségben 5–6 cm a talaj árnyékolására, tavasszal 4–5 cm).
-- **Trágyázás**: Évszakhoz illeszkedő tápanyag-összetételt (tavasszal nitrogéndús, ősszel fagyállóságot javító káliumdús) és pontos gramm-mennyiséget javasol a gyep területe alapján.
-- **Gyepszellőztetés & Szezonális tippek**: Időzíti a március–áprilisi tavaszi indítást, a szeptemberi őszi regenerálást, valamint a téli taposásvédelmet.
-
-### B) Új Gyep Létrehozása & Előzménykezelés
-Gyep felvételekor az alapadatokon kívül azonnal rögzíthetők:
-- **Művelési és nyírási beállítások** (vizuális kártyaválasztókkal).
-- **Tápanyag előzmény**: Megadható az utolsó trágyázás dátuma, és kiválasztható a termék a katalógusból, vagy kézzel rögzíthető. Mentéskor a rendszer automatikusan létrehozza a gyep első `FertilizingLog` naplóbejegyzését.
-- **Dinamikus műtrágya felvétel**: Ha a keresett műtrágya nincs a listában, az űrlapon belüli AJAX panellel azonnal hozzáadható az adatbázishoz, és rögtön kiválaszthatóvá válik.
-- **Fűnyírókés élezési dátum**: Későbbi emlékeztetők és karbantartás nyomon követésére.
-
-### C) Időjárás Integráció (`utils/weather.py`)
-- Lekéri az adott város pillanatnyi hőmérsékletét, páratartalmát, szélsebességét és csapadékadatait az **OpenWeatherMap API**-n keresztül.
-- Visszaadja a formázott adatokat és ikonokat a Dashboard és Javaslatok moduloknak.
-
-### D) Robusztus Médiafeldolgozó (`utils/helpers.py`)
-- Képfeltöltéskor a Pillow (PIL) könyvtár automatikusan:
-  - Átméretezi a nagy felbontású fotókat maximum 1200×1200 képpontra.
-  - Kezeli és javítja a mobiltelefonok EXIF tájolási információit (elkerülve a fejjel lefelé elforduló képeket).
-  - WebP formátumba tömöríti a fájlokat, minimalizálva a hálózati sávszélességet és a tárhelyhasználatot.
-  - Gyep törlésekor vagy fotócserénél automatikusan törli az árva fájlokat a lemezről.
-
----
-
-## 4. 🌐 Végpontok és Útvonal-architektúra (`app.py`)
-
-| Kategória | Végpont URL | Metódus | Leírás |
+| Kategória | Végpont URL | HTTP Metódus | Leírás |
 |---|---|---|---|
-| **Autentikáció** | `/login` | `GET, POST` | Bejelentkezés ("Emlékezz rám" opcióval) |
-| | `/register` | `GET, POST` | Új felhasználó regisztrációja |
-| | `/logout` | `GET` | Munkamenet lezárása |
-| **Dashboard** | `/` | `GET` | Időjárás, gyorsstatisztikák, sürgős teendők |
-| **Gyep Profilok** | `/profiles` | `GET` | Felhasználó gyepjeinek listája |
-| | `/profiles/new` | `GET, POST` | Új profil létrehozása fotóval, előzményekkel és beállításokkal |
+| **Hitelesítés** | `/login` | `GET, POST` | Bejelentkezés ("Emlékezz rám" támogatással) |
+| | `/register` | `GET, POST` | Új felhasználói fiók létrehozása |
+| | `/logout` | `GET` | Kijelentkezés |
+| **Műszerfal** | `/` | `GET` | Időjárás, gyorsstatisztikák, javaslatok, gyepkártyák |
+| **Gyep Profilok** | `/profiles` | `GET` | Felhasználó összes gyepének listája |
+| | `/profiles/new` | `GET, POST` | Új gyep profil létrehozása fotóval és előzményekkel |
 | | `/profiles/<id>` | `GET` | Részletes adatlap, előzmények, gyorsgombok |
-| | `/profiles/<id>/edit` | `GET, POST` | Profil és beállítások módosítása |
-| | `/profiles/<id>/delete`| `POST` | Profil és kapcsolódó naplók végleges törlése |
-| **Tevékenységek** | `/activities` | `GET` | Szűrhető napló (öntözés, nyírás, stb.) |
-| | `/activities/add/<type>` | `GET, POST` | Új bejegyzés rögzítése a kiválasztott típushoz |
-| **Tervezés** | `/calendar` | `GET` | Havi naptár havi navigációval és színkódolt eseményekkel |
-| | `/suggestions` | `GET` | Részletes, csoportosított tanácsok gyepenként |
-| **AJAX API** | `/api/grass-product/<id>` | `GET` | Fűmag termékadatok JSON-ben (űrlap auto-kitöltés) |
-| | `/api/fertilizer-product/<id>` | `GET` | Műtrágya NPK adatok JSON-ben (űrlap auto-kitöltés) |
-| | `/api/fertilizer-product/new` | `POST` | Új műtrágya termék azonnali mentése a katalógusba |
+| | `/profiles/<id>/edit` | `GET, POST` | Profil szerkesztése |
+| | `/profiles/<id>/delete`| `POST` | Gyep és kapcsolódó naplók végleges törlése |
+| **Tevékenységek** | `/activities` | `GET` | Tevékenységek szűrhető táblázata |
+| | `/activities/add/<type>` | `GET, POST` | Új naplóbejegyzés rögzítése a megadott típushoz |
+| **Tervezés** | `/calendar` | `GET` | Havi eseménynaptár navigációval |
+| | `/suggestions` | `GET` | Prioritás szerint csoportosított intelligens tanácsok |
+| **AJAX API** | `/api/grass-product/<id>` | `GET` | Fűmag adatok lekérése JSON formátumban |
+| | `/api/fertilizer-product/<id>` | `GET` | Műtrágya NPK adatok lekérése JSON formátumban |
+| | `/api/fertilizer-product/new` | `POST` | Új műtrágya azonnali mentése a katalógusba |
 
 ---
 
-## 5. 🎨 Frontend és Felhasználói Élmény (UI/UX)
+## 4. 🧠 Szabályalapú Javaslatmotor Logikája (`utils/suggestions.py`)
 
-- **Design System (`static/css/style.css`)**:
-  - Modern mélysötét (`#0a0f0d`, `#111a14`) háttér, organikus fűzöld és smaragd kiemelésekkel (`#22c55e`, `#16a34a`).
-  - Google Fonts tipográfia: *Outfit* a címekhez és *Inter* az adatokhoz/törzsszövegekhez.
-  - Vizuális rádiógomb-kártyák (`.method-selector`, `.method-card`) a művelési és nyírási módok intuitív kiválasztásához.
-  - Teljesen reszponzív: asztali gépen fix oldalsáv, tableten kompakt ikon-nézet, mobilon alsó/felső igazítás.
-- **Dinamikus Interakciók (`static/js/main.js` & inline scriptek)**:
-  - **Auto-Kitöltés**: Termék kiválasztásakor (pl. fűmag vagy műtrágya) aszinkron `fetch()` kéréssel lekéri a tulajdonságokat és kitölti a mezőket.
-  - **Dinamikus Termék Mentés**: Új műtrágya létrehozása az űrlap elhagyása nélkül, NPK előnézettel.
-  - **Azonnali Kép-előnézet**: Fájl kiválasztásakor még a szerverre küldés előtt megjeleníti a fotót.
-  - **Önmegsemmisítő Értesítések**: A flash üzenetek 5 másodperc után animáltan eltűnnek.
-  - **Naptár Renderelés**: Tiszta JavaScript generálja le a havi naprácsot, elhelyezve a színkódolt esemény-jelölőket.
+A javaslatmotor az alábbi szabályok mentén alkot személyre szabott ajánlásokat:
+
+1. **Öntözés**:
+   - Vizsgálja az utolsó öntözés óta eltelt napokat.
+   - Súlyozza a talaj típusát: homokos talaj (~5 nap), vályogos talaj (~7 nap), agyagos/tőzeges talaj (~9–10 nap).
+   - Figyelembe veszi az időjárást: ha az OpenWeatherMap szerint esett az eső (`rain_1h > 0`), az öntözés kihagyását javasolja.
+   - Kiszámítja a szükséges vízmennyiséget a gyep méretére (pl. `150 m² × 2–2.5 liter = 300–375 liter`).
+2. **Fűnyírás**:
+   - Évszakonkénti ciklusok: tavasz (7 nap), nyár (10 nap), ősz (14 nap), tél (nincs nyírás).
+   - Vágásmagasság-ajánlás: nyáron magasabbra (5–6 cm) a talaj kiszáradásának megakadályozására.
+3. **Trágyázás**:
+   - Tavasz: Nitrogéndús formula (pl. *ICL All Round 24-5-8*).
+   - Nyár / Ősz: Káliumdús stresszkezelő formula (pl. *ICL Stress Control 16-5-22* vagy *Compo Herbst 4-5-20*).
+   - Kiszámítja a javasolt kiszórási tömeget a teljes felületre (30–40 g/m²).
+4. **Gyepszellőztetés & Szezonális gondozás**:
+   - Tavaszi indítás (március–április) és őszi felkészítés (szeptember–október) időzítése.
 
 ---
 
-## 6. 🚀 Telepítési és Üzemeltetési Útmutató
+## 5. 🛠️ Telepítés és Helyi Futtatás
 
-### 1. Függőségek telepítése
+### 1. Repository klónozása
 ```bash
-# Virtuális környezet aktiválása után:
+git clone https://github.com/JosephWolf1986/GyepMester.git
+cd GyepMester
+```
+
+### 2. Virtuális környezet létrehozása és aktiválása
+```bash
+# Windows:
+python -m venv venv
+venv\Scripts\activate
+
+# Linux / macOS:
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Függőségek telepítése
+```bash
 pip install -r requirements.txt
 ```
 
-### 2. Környezeti változók (.env) beállítása (Opcionális)
-Hozz létre egy `.env` fájlt a gyökérkönyvtárban:
+### 4. Környezeti változók beállítása (`.env`)
+Hozz létre egy `.env` fájlt a gyökérben (a `.env.example` alapján):
 ```env
-SECRET_KEY=egyedi-titkos-kulcs
+SECRET_KEY=titkos-biztonsagi-kulcs-2026
 
-# Helyi SQLite:
+# Helyi SQLite adatbázis:
 DATABASE_URL=sqlite:///gyepmester.db
 
-# VAGY Supabase PostgreSQL:
-# DATABASE_URL=postgresql://postgres.PROJECT_REF:JELSZO@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=require
+# VAGY PostgreSQL (pl. Supabase):
+# DATABASE_URL=postgresql://postgres.YOUR_PROJECT:YOUR_PASSWORD@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=require
 
-OPENWEATHER_API_KEY=az_openweather_api_kulcsod
+# OpenWeatherMap API kulcs (opcionális az élő időjáráshoz):
+OPENWEATHER_API_KEY=az_api_kulcsod
 ```
 
-### 3. Alkalmazás futtatása
+### 5. Alkalmazás indítása
 ```bash
 python app.py
 ```
-Az alkalmazás automatikusan inicializálja az adatbázist (`db.create_all()`), betölti a katalógusadatokat a `seed_data.py`-ból, és elérhetővé válik a böngészőben:
+Az alkalmazás automatikusan létrehozza a táblákat és betölti az alaptermékeket az adatbázisba.
+
+Nyisd meg a böngésződben:
 👉 **`http://localhost:5000`**
+
+---
+
+## 📄 Licenc
+
+Ez a projekt nyílt forráskódú, és szabadon használható saját célra és továbbfejlesztésre.
+Készült a modern gyepápolás rajongóinak! 🌿
