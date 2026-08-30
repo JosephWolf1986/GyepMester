@@ -1,0 +1,38 @@
+# Fly.io telepítési konfiguráció – GyepMester
+# Dokumentáció: https://fly.io/docs/reference/configuration/
+
+app = 'gyepmester'
+primary_region = 'fra'          # Frankfurt – EU-hoz a legközelebb (Magyarország)
+kill_signal = 'SIGINT'
+
+[build]
+  # Dockerfile-t használ automatikusan
+
+[env]
+  PORT = '8080'
+  FLASK_ENV = 'production'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false    # Ingyenes szinten ne aludjon el
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+# Tartós kötet a képfeltöltésekhez
+[[mounts]]
+  source = 'gyepmester_uploads'
+  destination = '/app/static/uploads'
+  initial_size = '1gb'
+
+# Egészség-ellenőrzés
+[[services.http_checks]]
+  interval = '30s'
+  timeout = '5s'
+  grace_period = '10s'
+  path = '/login'
